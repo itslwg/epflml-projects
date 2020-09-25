@@ -1,5 +1,5 @@
-
 import numpy as np
+from helpers import *
 
 def generate_w(num_intervals):
     """Generate a grid of values for w0 and w1."""
@@ -14,12 +14,18 @@ def get_best_parameters(w0, w1, losses):
     return losses[min_row, min_col], w0[min_row], w1[min_col]
 
 
-def compute_loss(y, tx, w):
+def compute_loss(y, tx, w, method = "MSE"):
     """Calculate the MSE loss."""
-    e = y[np.newaxis].transpose() - tx.dot(w[np.newaxis].T)
-    mse = (1 / (2*tx.shape[0])) * np.sum(np.square(e))
     
-    return mse
+    if method == "MSE":
+        e = y[np.newaxis].transpose() - tx.dot(w[np.newaxis].T)
+        mse = (1 / (2*tx.shape[0])) * np.sum(np.square(e))
+        
+        return mse
+    
+    elif method == "MAE":
+        
+        return np.mean(np.abs(y-tx.dot(w)))
 
 
 def grid_search(y, tx, w0, w1):
@@ -38,7 +44,7 @@ def compute_gradient(y, tx, w):
     return - ((1 / tx.shape[0]) * np.dot(tx.T, e)).T
 
 
-def gradient_descent(y, tx, initial_w, max_iters, gamma):
+def gradient_descent(y, tx, initial_w, max_iters, gamma, verbose = False):
     """Gradient descent algorithm."""
     # Define parameters to store w and loss
     ws = [initial_w]
@@ -54,8 +60,9 @@ def gradient_descent(y, tx, initial_w, max_iters, gamma):
         # store w and loss
         ws.append(w)
         losses.append(loss)
-        print("Gradient Descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
-              bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
+        if verbose:
+            print("Gradient Descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
+                  bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
 
     return losses, ws
 
@@ -102,12 +109,12 @@ def least_squares_GD(y, tx, initial_w,
         y=y,
         tx=tx,
         initial_w=initial_w,
-        max_iters=max_iters,
+        max_iters=max_it,
         gamma=gamma,
         verbose=verbose
     )
     
-    return w[-1], losses[-1]
+    return ws[-1], losses[-1]
 
 
 def least_squares_SGD(y, tx, initial_w,
@@ -126,7 +133,7 @@ def least_squares_SGD(y, tx, initial_w,
         batch_size=1,
         verbose=verbose
     )
-    return w[-1], losses[-1]
+    return ws[-1], losses[-1]
 
 def least_squares(y, tx):
     """Linear regression fit using Normal equations."""

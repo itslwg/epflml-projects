@@ -1,9 +1,5 @@
-# -*- coding: utf-8 -*-
-""" Grid Search"""
 
 import numpy as np
-import template.costs
-
 
 def generate_w(num_intervals):
     """Generate a grid of values for w0 and w1."""
@@ -18,6 +14,14 @@ def get_best_parameters(w0, w1, losses):
     return losses[min_row, min_col], w0[min_row], w1[min_col]
 
 
+def compute_loss(y, tx, w):
+    """Calculate the MSE loss."""
+    e = y[np.newaxis].transpose() - tx.dot(w[np.newaxis].T)
+    mse = (1 / (2*tx.shape[0])) * np.sum(np.square(e))
+    
+    return mse
+
+
 def grid_search(y, tx, w0, w1):
     """Algorithm for grid search."""
     losses = np.zeros((len(w0), len(w1)))
@@ -27,8 +31,9 @@ def grid_search(y, tx, w0, w1):
 
     return losses
 
+
 def compute_gradient(y, tx, w):
-    """Compute the gradient."""
+    
     e = y[np.newaxis].T - np.dot(tx, w[np.newaxis].T)
     return - ((1 / tx.shape[0]) * np.dot(tx.T, e)).T
 
@@ -54,9 +59,75 @@ def gradient_descent(y, tx, initial_w, max_iters, gamma):
 
     return losses, ws
 
-def compute_loss(y, tx, w):
-    """Calculate the MSE loss."""
-    e = y[np.newaxis].transpose() - tx.dot(w[np.newaxis].T)
-    mse = (1 / (2*tx.shape[0])) * np.sum(np.square(e))
+
+def compute_stoch_gradient(y, tx, w):
+    """Compute a stochastic gradient from just few examples n and their corresponding y_n labels."""
+    e = y[np.newaxis].T - np.dot(tx, w[np.newaxis].T)
+    return - ((1 / tx.shape[0]) * np.dot(tx.T, e)).T
+
+
+def stochastic_gradient_descent(y, tx, initial_w,
+                                batch_size, max_iters, gamma,
+                                verbose):
+    """Stochastic gradient descent algorithm."""
+    # Define parameters to store w and loss
+    ws = [initial_w]
+    losses = []
+    w = initial_w
+    for n_iter in range(max_iters):
+        for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
+            # Compute gradient and loss
+            g = compute_stoch_gradient(minibatch_y, minibatch_tx, w)
+            loss = compute_loss(minibatch_y, minibatch_tx, w)
+            # Update the weights
+            w = w - gamma * g
+            w = w.ravel()
+            # store w and loss
+            ws.append(w)
+            losses.append(loss)
+            if verbose:
+                print("Stochastic gradient descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
+                    bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
+
+    return losses, ws
+
+
+def least_squares_GD(y, tx, initial_w,
+                     max_it, gamma, verbose=False):
+    """Linear Regression with Gradient Descent
+
+    Uses Mean Squared Error as the loss function.
+    """
+    losses, ws = gradient_descent(
+        y=y,
+        tx=tx,
+        initial_w=initial_w,
+        max_iters=max_iters,
+        gamma=gamma,
+        verbose=verbose
+    )
     
-    return mse
+    return w[-1], losses[-1]
+
+
+def least_squares_SGD(y, tx, initial_w,
+                      max_iters, gamma, verbose=False):
+    """Linear regression with Stochastic Gradient Descent (SGD)
+
+    Current implementation uses Mean Squared Error as the loss.
+    """
+    # Use batch_size = 1 as per the projec instructions.
+    losses, ws = stochastic_gradient_descent(
+        y=y,
+        tx=tx,
+        initial_w=initial_w,
+        max_iters=max_iters,
+        gamma=gamma,
+        batch_size=1,
+        verbose=verbose
+    )
+    return w[-1], losses[-1]
+
+def least_squares(y, tx):
+    """Linear regression fit using Normal equations."""
+    pass

@@ -2,12 +2,12 @@
 import numpy as np
 
 
-def load_data(file_name, data_dir="Project_1/data/",
+def load_data(file_name, data_dir="./data/",
               sub_sample=True, add_outlier=False):
     """Load data and convert it to the metrics system."""
     path_dataset = data_dir + file_name
     data = np.genfromtxt(
-        path_dataset, delimiter=",", skip_header=1, usecols=[1, 2])
+        path_dataset, delimiter=",", skip_header=1)
 
     if sub_sample:
         data = data[::50]
@@ -24,10 +24,10 @@ def standardize(x):
     return x, mean_x, std_x
 
 
-def build_model_data(height, weight):
+def build_model_data(raw_sample):
     """Form (y,tX) to get regression data in matrix form."""
-    y = weight
-    x = height
+    y = raw_sample[:, 1]
+    x = raw_sample[:, 2:]
     num_samples = len(y)
     tx = np.c_[np.ones(num_samples), x]
     return y, tx

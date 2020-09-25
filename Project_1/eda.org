@@ -1,0 +1,54 @@
+* Activate environment
+
+  #+BEGIN_SRC elisp :session 
+(pyvenv-activate "~/courses/Machine Learning/")
+  #+END_SRC
+
+  #+RESULTS:
+
+* EDA
+  
+  Import allowed packages
+  
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+import numpy as np
+import matplotlib.pyplot as plt
+%matplotlib inline
+import os
+%load_ext autoreload
+%autoreload 2
+
+from utils.helpers import load_data, build_model_data
+  #+END_SRC
+
+  #+RESULTS:
+  :RESULTS:
+  # Out[17]:
+  :END:
+
+  Read the data
+
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+train = load_data("train.csv", sub_sample=True)
+y, tx = build_model_data(
+    raw_sample=train
+)
+  #+END_SRC
+
+  #+RESULTS:
+  :RESULTS:
+  # Out[18]:
+  :END:
+
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+
+  #+END_SRC
+
+  #+RESULTS:
+  :RESULTS:
+  # Out[31]:
+  : False
+  :END:
+  
+  
+

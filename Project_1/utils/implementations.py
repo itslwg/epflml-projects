@@ -130,4 +130,6 @@ def least_squares_SGD(y, tx, initial_w,
 
 def least_squares(y, tx):
     """Linear regression fit using Normal equations."""
-    pass
+    # \hat{\beta} = (X^TX)^{-1} X^Ty
+    w = np.linalg.inv(tx.T.dot(tx)).dot(tx.T).dot(y)
+    return w, compute_loss(y, tx, w)

@@ -1,0 +1,1 @@
+""" Script to check if the implementations work on random data """import numpy as npfrom helpers import *from implementations import *height, weight, gender = load_data(sub_sample=False, add_outlier=False)x, mean_x, std_x = standardize(height)y, tx = build_model_data(x, weight)w, loss = least_squares(y, tx)

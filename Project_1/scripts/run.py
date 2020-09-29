@@ -1,1 +1,1 @@
-""" Script to go from data to a file of predictions """import numpy as npif __name__ == "__main__":    pass
+# Script to go from data to a file of predictionsimport numpy as npif __name__ == "__main__":    pass

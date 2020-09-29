@@ -27,5 +27,9 @@ print(f"LR w/ SGD, w = {w}, loss = {loss}")
 w, loss = least_squares(y, tx)
 print(f"LR w/ normal equations, w = {w}, loss = {loss}")
 
+# Ridge regression w/ normal equations
+# With lambda = 1.0, we get the same result as LR.
+w, loss = ridge_regression(y, tx, lambda_ = 1.0)
+print(f"Ridge regression w/ normal equations, w = {w}, loss = {loss}")
 
 

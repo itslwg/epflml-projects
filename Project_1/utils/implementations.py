@@ -1,5 +1,6 @@
 import numpy as np
-from helpers import *
+## Note: Set the working directory to the base of the project, i.e. the "Project_1" directory
+from utils.helpers import *
 
 def generate_w(num_intervals):
     """Generate a grid of values for w0 and w1."""

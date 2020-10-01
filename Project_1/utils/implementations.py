@@ -16,7 +16,7 @@ def get_best_parameters(w0, w1, losses):
 
 
 def compute_loss(y, tx, w, method = "MSE"):
-    """Calculate the MSE loss."""
+    """Calculate the MSE or MAE loss."""
     
     if method == "MSE":
         e = y[np.newaxis].transpose() - tx.dot(w[np.newaxis].T)
@@ -27,7 +27,10 @@ def compute_loss(y, tx, w, method = "MSE"):
     elif method == "MAE":
         
         return np.mean(np.abs(y-tx.dot(w)))
-
+    
+def sigmoid(x):
+	"""Sigmoid function"""
+	return 1 / (1 + np.exp(-x))
 
 def grid_search(y, tx, w0, w1):
     """Algorithm for grid search."""
@@ -40,10 +43,22 @@ def grid_search(y, tx, w0, w1):
 
 
 def compute_gradient(y, tx, w):
-    
+    """ Compute the gradient for MSE loss """
     e = y[np.newaxis].T - np.dot(tx, w[np.newaxis].T)
     return - ((1 / tx.shape[0]) * np.dot(tx.T, e)).T
 
+def compute_gradient_logistic(y, tx, w):
+    """ Compute the gradient for logistic loss function"""
+    
+    e = sigmoid(np.dot(tx, w[np.newaxis].T)) - y[np.newaxis].T
+    return ((1 / tx.shape[0]) * np.dot(tx.T, e)).T
+
+def compute_loss_logistic(y, tx, w):
+    """ Logistic loss"""
+    
+    a = sigmoid(np.dot(tx, w[np.newaxis].T))
+    loss = (- 1 / tx.shape[0]) * np.sum(y * np.log(a) + (1 - y) * (np.log(1 - a)))
+    return loss
 
 def gradient_descent(y, tx, initial_w, max_iters, gamma, verbose = False):
     """Gradient descent algorithm."""
@@ -65,6 +80,24 @@ def gradient_descent(y, tx, initial_w, max_iters, gamma, verbose = False):
             print("Gradient Descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
                   bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
 
+    return losses, ws
+
+def gradient_descent_logistic(y, tx, initial_w, max_iters, gamma, verbose = False):
+    """Gradient descent algorithm for logistic regression."""
+    ws = [initial_w]
+    losses = []
+    w = initial_w
+    for n_iter in range(max_iters):
+        g = compute_gradient_logistic(y, tx, w)
+        loss = compute_loss_logistic(y, tx, w)
+        w-= gamma * g
+        w = w.ravel()
+        
+        ws.append(w)
+        losses.append(loss)
+        
+        if verbose:
+            print(f"Gradient descent {n_iter}/{max_iters-1}: loss = {loss}, w0={w[0]}, w1={w[1]}")
     return losses, ws
 
 
@@ -148,3 +181,17 @@ def ridge_regression(y, tx, lambda_):
     n = tx.shape[1]
     w = np.linalg.inv( (tx.T @ tx) + (lambda_ * np.identity(n))) @ tx.T @ y
     return w, compute_loss(y, tx, w)
+
+
+
+def logistic_regression(y, tx, initial_w, max_iters, gamma):
+    """ Logistic regression with gradient descent"""
+    
+    losses, ws = gradient_descent_logistic(
+        y=y,
+        tx=tx,
+        initial_w=initial_w,
+        max_iters=max_iters,
+        gamma=gamma
+    )
+    return ws[-1], losses[-1]

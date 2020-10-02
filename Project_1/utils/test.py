@@ -33,6 +33,10 @@ print(f"LR w/ normal equations, w = {w}, loss = {loss}")
 w, loss = ridge_regression(y, tx, lambda_ = 1.0)
 print(f"Ridge regression w/ normal equations, w = {w}, loss = {loss}")
 
-# ## Need a dataset to test logistic regression.
+## We need a dataset to test logistic regression.
 
-w, loss = logistic_regression(y, tx, inital_w, max_it, gamma)
+# w, loss = logistic_regression(y, tx, initial_w, max_it, gamma)
+# print(f"Logistic regression w/ GD, w:{w}, loss:{loss}")
+
+# w, loss = logistic_regression(y, tx, initial_w, max_it, gamma, batch_size=1)
+# print(f"Logistic regression w/ GD, w:{w}, loss:{loss}")

@@ -188,15 +188,27 @@ def ridge_regression(y, tx, lambda_):
     return w, mse(y, tx, w)
 
 
-
-def logistic_regression(y, tx, initial_w, max_iters, gamma):
+def logistic_regression(y, tx, initial_w, max_iters, gamma, batch_size=None):
     """ Logistic regression with gradient descent"""
+
     
-    losses, ws = gradient_descent_logistic(
-        y=y,
-        tx=tx,
-        initial_w=initial_w,
-        max_iters=max_iters,
-        gamma=gamma
-    )
-    return ws[-1], losses[-1]
+    if batch_size:
+        losses, ws = stochastic_gradient_descent_logistic(
+            y=y,
+            tx=tx,
+            initial_w=initial_w,
+            batch_size=batch_size,
+            max_iters=max_iters,
+            gamma=gamma  
+        )
+    else:
+        losses, ws = gradient_descent_logistic(
+            y=y,
+            tx=tx,
+            initial_w=initial_w,
+            max_iters=max_iters,
+            gamma=gamma
+        )
+        
+    return ws[-1], logistic_error(y, tx, ws[-1])
+

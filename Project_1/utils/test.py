@@ -18,9 +18,10 @@ w, loss = least_squares_GD(y, tx, initial_w,
                            max_it, gamma, verbose=False)
 print(f"LR w/ GD, w = {w}, loss = {loss}")
 
-# LR w/ SGD --> I think there is an issue here
+# LR w/ SGD
+
 w, loss = least_squares_SGD(y, tx, initial_w,
-                      max_it, gamma, verbose = False)
+                      max_it*5, gamma, verbose = False)
 print(f"LR w/ SGD, w = {w}, loss = {loss}")
 
 # LR w/ normal equations
@@ -32,6 +33,6 @@ print(f"LR w/ normal equations, w = {w}, loss = {loss}")
 w, loss = ridge_regression(y, tx, lambda_ = 1.0)
 print(f"Ridge regression w/ normal equations, w = {w}, loss = {loss}")
 
-## Need a dataset to test logistic regression.
+# ## Need a dataset to test logistic regression.
 
 w, loss = logistic_regression(y, tx, inital_w, max_it, gamma)

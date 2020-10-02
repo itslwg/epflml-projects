@@ -90,7 +90,7 @@ def gradient_descent_logistic(y, tx, initial_w, max_iters, gamma, verbose = Fals
     for n_iter in range(max_iters):
         g = compute_gradient_logistic(y, tx, w)
         loss = compute_loss_logistic(y, tx, w)
-        w-= gamma * g
+        w = w - gamma * g
         w = w.ravel()
         
         ws.append(w)

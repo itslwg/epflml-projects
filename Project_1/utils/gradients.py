@@ -66,5 +66,3 @@ def logistic_grad(y, tx, w):
     
     e = sigmoid(tx @ w) - y
     return (1/tx.shape[0]) * tx.T @ e
-    
-    

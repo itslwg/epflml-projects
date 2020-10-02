@@ -33,3 +33,5 @@ w, loss = ridge_regression(y, tx, lambda_ = 1.0)
 print(f"Ridge regression w/ normal equations, w = {w}, loss = {loss}")
 
 ## Need a dataset to test logistic regression.
+
+w, loss = logistic_regression(y, tx, inital_w, max_it, gamma)

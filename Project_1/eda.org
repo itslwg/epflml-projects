@@ -19,46 +19,89 @@ import os
 %load_ext autoreload
 %autoreload 2
 
-# from utils.implementations import logistic_regression
+from utils.implementations import logistic_regression
   #+END_SRC
 
   #+RESULTS:
   :RESULTS:
-  # Out[8]:
+  # Out[27]:
   :END:
 
-  Read the data
+#+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+os.chdir("utils")
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[26]:
+:END:
+
+  Read the training data
 
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-train = pd.read_csv("data/train.csv")
+train = pd.read_csv("../data/train.csv")
   #+END_SRC
 
   #+RESULTS:
   :RESULTS:
-  # Out[2]:
+  # Out[199]:
   :END:
 
+  
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-y = np.asarray(train.loc[:, 'Prediction'])
-y[y == 's'] = 1
-y[y == 'b'] = 0
+def create_prediction_data(raw_sample, include_outcome=True):
+    ## Drop nas
+    cc = raw_sample.replace(to_replace=-999, value=np.nan).dropna()
+    ## Subset outcome 
+    y = None
+    if include_outcome:
+        y = np.where(np.asarray(cc.loc[:, 'Prediction']) == 's', 1, 0)
+    c = ['Id', 'Prediction']
+    X = cc.drop(columns=c)
+    ## Standardize sample
+    X_standardized = (X - X.mean(axis=0)) / X.std(axis=0)
+    ## Make prediction data
+    X_model = pd.concat([
+        pd.DataFrame(
+            np.ones((X_standardized.shape[0], 1)), 
+            columns=['beta0'], 
+            index=X_standardized.index
+        ),
+        X_standardized
+    ], axis=1)
+
+    return X_model, y
   #+END_SRC
 
   #+RESULTS:
   :RESULTS:
-  # Out[3]:
+  # Out[215]:
   :END:
 
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-freq = train['Prediction'].value_counts()
+X, y = create_prediction_data(train)
+  #+END_SRC
+
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+unique, counts = np.unique(y, return_counts=True)
+  #+END_SRC
+
+  #+RESULTS:
+  :RESULTS:
+  # Out[223]:
+  :END:
+  
+
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+freq = pd.Series(y).value_counts()
 plt.bar(list(freq.index), freq)
   #+END_SRC
 
   #+RESULTS:
   :RESULTS:
-  # Out[4]:
+  # Out[218]:
   : <BarContainer object of 2 artists>
-  [[file:./obipy-resources/f85TF3.png]]
+  [[file:./obipy-resources/mQbkE3.png]]
   :END:
   
   Find the distribution of "signals" vs "background" in the outcome of interest
@@ -90,7 +133,7 @@ train.describe()
 
   #+RESULTS:
   :RESULTS:
-  # Out[121]:
+  # Out[6]:
   #+BEGIN_EXAMPLE
     Id   DER_mass_MMC  DER_mass_transverse_met_lep  \
     count  250000.000000  250000.000000                250000.000000
@@ -165,7 +208,7 @@ X = train.drop(columns=['Id', 'Prediction'])
 
   #+RESULTS:
   :RESULTS:
-  # Out[120]:
+  # Out[7]:
   :END:
   
   Coerce missing values (i.e. -999) to actual missing (i.e. NaN)
@@ -177,7 +220,7 @@ X.columns[pd.isnull(X).sum(axis=0) > 0]
 
   #+RESULTS:
   :RESULTS:
-  # Out[119]:
+  # Out[8]:
   #+BEGIN_EXAMPLE
     Index(['DER_mass_MMC', 'DER_deltaeta_jet_jet', 'DER_mass_jet_jet',
     'DER_prodeta_jet_jet', 'DER_lep_eta_centrality', 'PRI_jet_leading_pt',
@@ -196,44 +239,6 @@ X.columns[pd.isnull(X).sum(axis=0) > 0]
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
 X.mean(axis=0)
   #+END_SRC
-
-  #+RESULTS:
-  :RESULTS:
-  # Out[82]:
-  #+BEGIN_EXAMPLE
-    DER_mass_MMC                   121.858528
-    DER_mass_transverse_met_lep     49.239819
-    DER_mass_vis                    81.181982
-    DER_pt_h                        57.895962
-    DER_deltaeta_jet_jet             2.403735
-    DER_mass_jet_jet               371.783360
-    DER_prodeta_jet_jet             -0.821688
-    DER_deltar_tau_lep               2.373100
-    DER_pt_tot                      18.917332
-    DER_sum_pt                     158.432217
-    DER_pt_ratio_lep_tau             1.437609
-    DER_met_phi_centrality          -0.128305
-    DER_lep_eta_centrality           0.458290
-    PRI_tau_pt                      38.707419
-    PRI_tau_eta                     -0.010973
-    PRI_tau_phi                     -0.008171
-    PRI_lep_pt                      46.660207
-    PRI_lep_eta                     -0.019507
-    PRI_lep_phi                      0.043543
-    PRI_met                         41.717235
-    PRI_met_phi                     -0.010119
-    PRI_met_sumet                  209.797178
-    PRI_jet_num                      0.979176
-    PRI_jet_leading_pt              84.822105
-    PRI_jet_leading_eta             -0.003275
-    PRI_jet_leading_phi             -0.012393
-    PRI_jet_subleading_pt           57.679474
-    PRI_jet_subleading_eta          -0.011845
-    PRI_jet_subleading_phi          -0.001582
-    PRI_jet_all_pt                  73.064591
-    dtype: float64
-  #+END_EXAMPLE
-  :END:
   
   Try out mean imputation for variables
 
@@ -250,32 +255,12 @@ X_augmented = pd.concat([X_replaced, indicator_columns], axis=1)
 
   #+RESULTS:
   :RESULTS:
-  # Out[87]:
+  # Out[11]:
   :END:
   
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
 X_augmented.head().iloc[:, :5]
   #+END_SRC
-
-  #+RESULTS:
-  :RESULTS:
-  # Out[95]:
-  #+BEGIN_EXAMPLE
-    DER_mass_MMC  DER_deltaeta_jet_jet  DER_mass_jet_jet  DER_prodeta_jet_jet  \
-    0    138.470000              0.910000         124.71100             2.666000
-    1    160.937000              2.403735         371.78336            -0.821688
-    2    121.858528              2.403735         371.78336            -0.821688
-    3    143.905000              2.403735         371.78336            -0.821688
-    4    175.864000              2.403735         371.78336            -0.821688
-
-    DER_lep_eta_centrality
-    0                 0.20000
-    1                 0.45829
-    2                 0.45829
-    3                 0.45829
-    4                 0.45829
-  #+END_EXAMPLE
-  :END:
   
   Another approach is to do list-wise deletion. Let's do that on the full training set and then
   extract the prediction variables
@@ -286,12 +271,12 @@ train_cc = train.replace(to_replace=-999, value=np.nan).dropna()
 
   #+RESULTS:
   :RESULTS:
-  # Out[3]:
+  # Out[37]:
   :END:
 
   Doing list-wise deletion we end up with a much more balanced outcome variable, and still have a lot of 
   data (approx 70K rows), and 32K signals. Thus, the list-wise deletion seems to be a adequate way 
-  to handle missing data in this case
+  to handle missing data in this case.
 
 ** Exploring the distributions of the variables
 
@@ -302,7 +287,7 @@ X = train_cc.drop(columns=["Id", "Prediction"])
 
    #+RESULTS:
    :RESULTS:
-   # Out[4]:
+   # Out[38]:
    :END:
 
    Standardize the input variables
@@ -314,7 +299,7 @@ X_standardized
 
    #+RESULTS:
    :RESULTS:
-   # Out[5]:
+   # Out[39]:
    #+BEGIN_EXAMPLE
      DER_mass_MMC  DER_mass_transverse_met_lep  DER_mass_vis  DER_pt_h  \
      0           0.257669                     0.532831      0.474607 -1.093446
@@ -405,8 +390,8 @@ f = X_standardized.hist(figsize=(15, 15), bins = 100)
 
    #+RESULTS:
    :RESULTS:
-   # Out[6]:
-   [[file:./obipy-resources/QmRAcX.png]]
+   # Out[40]:
+   [[file:./obipy-resources/siaG6L.png]]
    :END:
    
    #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
@@ -427,41 +412,12 @@ sns.heatmap(
    [[file:./obipy-resources/eJexaw.png]]
    :END:
    
-
 * Training
-  
-  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-y = np.asarray(train.loc[:, 'Prediction'])
-y[y == 's'] = 1
-y[y == 'b'] = 0
-  #+END_SRC
+
 
   #+RESULTS:
   :RESULTS:
-  # Out[33]:
-  :END:
-  
-  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-def create_prediction_data(raw_sample, include_outcome=True):
-    y = None
-    if include_outcome:
-        y = np.asarray(raw_sample.loc[:, 'Prediction'])
-        y[y == 's'] = 1
-        y[y == 'b'] = 0
-    c = ['Id', 'Prediction']
-    X = raw_sample.drop(columns=c)
-    X_standardized = (X - X.mean(axis=0)) / X.std(axis=0)
-    X_model = pd.concat([
-        pd.DataFrame(np.ones((X_standardized.shape[0], 1)), columns=['beta0']),
-        X_standardized
-    ], axis=1)
-
-    return X_model, y
-  #+END_SRC
-
-  #+RESULTS:
-  :RESULTS:
-  # Out[34]:
+  # Out[200]:
   :END:
   
 #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
@@ -470,53 +426,22 @@ X, y = create_prediction_data(train)
 
 #+RESULTS:
 :RESULTS:
-# Out[5]:
-:END:
-
-#+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-y
-#+END_SRC
-
-#+RESULTS:
-:RESULTS:
-# Out[7]:
-: array([0, 1, 1, ..., 0, 1, 1], dtype=object)
+# Out[201]:
 :END:
 
 #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
 w, loss = logistic_regression(
-    y=y,
+    y=y.reshape(-1, 1),
     tx=np.asarray(X),
-    initial_w=np.array([0 for x in X.columns]),
-    max_iters=30,
-    gamma=0.1,
-    verbose=True
+    initial_w=np.array([0 for x in X.columns])[np.newaxis].T,
+    max_iters=100,
+    gamma=0.000001,
+    batch_size = 1
 )
-loss
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[8]:
-: 0.08740710179301521
-:END:
-
-* Testing
-
-#+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-test = pd.read_csv("data/test.csv")
-#+END_SRC
-
-#+RESULTS:
-:RESULTS:
-# Out[9]:
-:END:
-
-#+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-X_test, _ = create_prediction_data(test, include_outcome=False)
-#+END_SRC
-
-#+RESULTS:
-:RESULTS:
-# Out[28]:
+# Out[212]:
+: 0.5152807244229209
 :END:

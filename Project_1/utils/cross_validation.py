@@ -59,3 +59,25 @@ def accuracy(y_targ, y_pred):
     return 1.0 - (total_wrong / len(y_pred))
 
 
+def r_squared(y_targ, y_pred):
+    """
+    Compute the coefficient of determination
+
+    Parameters
+    ----------
+    y_targ : Vector
+        True output.
+    y_pred : Vector
+        Predicted output.
+
+    Returns
+    -------
+    rs : Scalar
+        r squared.
+
+    """
+    
+    ss_tot = np.sum((y_targ - np.mean(y_targ))**2)
+    ss_res = np.sum((y_targ - y_pred)**2)
+    return 1 - (ss_res/ss_tot)
+

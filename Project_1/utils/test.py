@@ -1,22 +1,46 @@
+
 #Script to check if the implementations work on random data.
 #We do not give this to the teachers
 
 import numpy as np
 from helpers import *
 from implementations import *
+from cross_validation import *
 
-height, weight, gender = load_data(sub_sample=False, add_outlier=False)
-x, mean_x, std_x = standardize(height)
-y, tx = build_model_data(x, weight)
+#### 
+from sklearn import datasets #Not allowed
+from sklearn.linear_model import LogisticRegression, LinearRegression #Not allowed
+from sklearn.metrics import accuracy_score #Not allowed
+from sklearn.metrics import r2_score #Not allowed
 
-initial_w = np.array([0,0])
-max_it = 50
-gamma = 0.7
+np.seterr(divide = 'ignore') 
 
-#  LR w/ GD
+# =============================================================================
+# Linear Regression 
+# =============================================================================
+
+# Load LR data
+X, y = datasets.load_boston(return_X_y=True)
+X = normalize(X)
+# Add columns of 1's for bias term 
+tx = np.c_[np.ones(X.shape[0]), X]
+
+# Initalize paramaters
+initial_w = np.zeros(tx.shape[1])
+max_it = 500
+gamma = 0.05
+
+# #  LR w/ GD.
 w, loss = least_squares_GD(y, tx, initial_w,
-                           max_it, gamma, verbose=False)
-print(f"LR w/ GD, w = {w}, loss = {loss}")
+                            max_it, gamma, verbose=False)
+y_pred = tx @ w
+print(f"Our implementation r_sq: {r_squared(y, y_pred)}, loss : {mse(y, tx, w)}")
+
+# Sklearn LR.
+reg = LinearRegression().fit(X, y)
+y_pred = reg.predict(X)
+print(f"Sklearn implementation r_sq: {r2_score(y_pred, y)}, sklearn loss {mse(y, tx, np.r_[reg.intercept_, reg.coef_])}")
+
 
 # LR w/ SGD
 
@@ -29,14 +53,36 @@ w, loss = least_squares(y, tx)
 print(f"LR w/ normal equations, w = {w}, loss = {loss}")
 
 # Ridge regression w/ normal equations
-# With lambda = 1.0, we get the same result as LR.
 w, loss = ridge_regression(y, tx, lambda_ = 1.0)
 print(f"Ridge regression w/ normal equations, w = {w}, loss = {loss}")
 
-## We need a dataset to test logistic regression.
+# =============================================================================
+# Logistic Regression
+# =============================================================================
 
-# w, loss = logistic_regression(y, tx, initial_w, max_it, gamma)
-# print(f"Logistic regression w/ GD, w:{w}, loss:{loss}")
+X, y = datasets.load_breast_cancer(return_X_y = True)
 
-# w, loss = logistic_regression(y, tx, initial_w, max_it, gamma, batch_size=1)
-# print(f"Logistic regression w/ GD, w:{w}, loss:{loss}")
+# Normalize data
+scaled_X = normalize(X)
+# Add column of 1's for bias term
+tx = np.c_[np.ones(X.shape[0]), scaled_X]
+# Set parameters
+initial_w = np.zeros(tx.shape[1])
+max_it = 100
+gamma = 0.7
+# Gradient descent
+w, loss = logistic_regression(y, tx, initial_w, max_it, gamma)
+# Predit in sample
+y_pred = np.rint(sigmoid(tx @ w))
+
+print(f"Our implementation accuracy: {accuracy(y, y_pred)}")
+
+# Check with the sklearn implementation
+
+clf = LogisticRegression().fit(scaled_X,y)
+print("Sklearn implementation accuracy: ",accuracy_score(y, clf.predict(scaled_X)))
+
+# Stochastic gradient descent logistic regression.
+w, loss = logistic_regression(y, tx, initial_w, max_it, gamma, batch_size=1)
+y_pred = np.rint(sigmoid(tx @ w))
+print(f"Our implementation accuracy Stochastic Gradient Descent: {accuracy(y, y_pred)}")

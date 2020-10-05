@@ -89,3 +89,20 @@ def sigmoid(x):
 
     """
 	return 1 / (1 + np.exp(-x))
+
+def normalize(X):
+    """
+    Z score normalization
+
+    Parameters
+    ----------
+    x : Matrix
+        Input features.
+
+    Returns
+    -------
+    Matrix for input features that have been normalized.
+
+    """
+    
+    return (X - np.mean(X, axis=0)) / np.std(X, axis=0)

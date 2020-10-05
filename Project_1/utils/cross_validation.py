@@ -81,7 +81,7 @@ def r_squared(y_targ, y_pred):
     ss_res = np.sum((y_targ - y_pred)**2)
     return 1 - (ss_res/ss_tot)
 
-def split_data(x, y, ratio, seed=1, shuffle=False):
+def split_data(x, y, ratio):
     """
     Split data into train and test set
 
@@ -111,13 +111,7 @@ def split_data(x, y, ratio, seed=1, shuffle=False):
 
     """
     assert len(x) == len(y), "X & y must be the same length"
-    # set seed
-    np.random.seed(seed)
-    
-    if shuffle:
-        # Shuffle the data
-        np.random.shuffle(x)
-        np.random.shuffle(y)
+
     
     # Select what index we use to make the split
     

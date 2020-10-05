@@ -81,3 +81,53 @@ def r_squared(y_targ, y_pred):
     ss_res = np.sum((y_targ - y_pred)**2)
     return 1 - (ss_res/ss_tot)
 
+def split_data(x, y, ratio, seed=1, shuffle=False):
+    """
+    Split data into train and test set
+
+    Parameters
+    ----------
+    x : Matrix
+        Input features.
+    y : Vector
+        output.
+    ratio : Scalar
+        What proportion of the data to keep for train vs test.  E.g, 0.8 --> 80% of data is the train set & 20% test set.
+    seed : Scalar, optional
+        Random state. The default is 1.
+    shuffle : Boolean, optional
+        Shuffle the data or not. The default is False.
+
+    Returns
+    -------
+    x_train : Matrix
+        Training set input features.
+    x_test : Matrix
+        Testing set input features.
+    y_train : Vector
+        Training set output.
+    y_test : Vector
+        testing set output.
+
+    """
+    assert len(x) == len(y), "X & y must be the same length"
+    # set seed
+    np.random.seed(seed)
+    
+    if shuffle:
+        # Shuffle the data
+        np.random.shuffle(x)
+        np.random.shuffle(y)
+    
+    # Select what index we use to make the split
+    
+    split = int(x.shape[0]*ratio)
+    
+    # Make the split
+    
+    x_train = x[:split]
+    y_train = y[:split]
+    x_test = x[split:]
+    y_test = y[split:]
+    
+    return x_train, x_test, y_train, y_test

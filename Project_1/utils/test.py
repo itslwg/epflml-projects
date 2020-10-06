@@ -9,7 +9,8 @@ from cross_validation import *
 
 #### 
 from sklearn import datasets #Not allowed
-from sklearn.linear_model import LogisticRegression, LinearRegression #Not allowed
+from sklearn.linear_model import LogisticRegression, LinearRegression  #Not allowed
+from sklearn.linear_model import ridge_regression as rr
 from sklearn.metrics import accuracy_score #Not allowed
 from sklearn.metrics import r2_score #Not allowed
 
@@ -55,6 +56,9 @@ print(f"LR w/ normal equations, w = {w}, loss = {loss}")
 # Ridge regression w/ normal equations
 w, loss = ridge_regression(y, tx, lambda_ = 1.0)
 print(f"Ridge regression w/ normal equations, w = {w}, loss = {loss}")
+
+ridge_w = rr(tx, y, alpha = 1.0)
+print(f"Sklearn ridge regression, w = {ridge_w}")
 
 # =============================================================================
 # Logistic Regression

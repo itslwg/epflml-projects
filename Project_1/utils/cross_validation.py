@@ -81,7 +81,7 @@ def r_squared(y_targ, y_pred):
     ss_res = np.sum((y_targ - y_pred)**2)
     return 1 - (ss_res/ss_tot)
 
-def split_data(x, y, ratio):
+def split_data(x, y, ratio, shuffle=True, seed=1):
     """
     Split data into train and test set
 
@@ -96,7 +96,7 @@ def split_data(x, y, ratio):
     seed : Scalar, optional
         Random state. The default is 1.
     shuffle : Boolean, optional
-        Shuffle the data or not. The default is False.
+        Shuffle the data or not. The default is True.
 
     Returns
     -------
@@ -117,11 +117,21 @@ def split_data(x, y, ratio):
     
     split = int(x.shape[0]*ratio)
     
-    # Make the split
-    
-    x_train = x[:split]
-    y_train = y[:split]
-    x_test = x[split:]
-    y_test = y[split:]
+    if shuffle:
+        np.random.seed(seed)
+        train_idx = np.random.permutation(np.arange(x.shape[0]))[:split]
+        test_idx = np.random.permutation(np.arange(x.shape[0]))[split:]
+
+
+        x_train = x[train_idx]
+        y_train = y[train_idx]
+        x_test = x[test_idx]
+        y_test = y[test_idx]
+
+    else:
+        x_train = x[:split]
+        y_train = y[:split]
+        x_test = x[split:]
+        y_test = y[split:]
     
     return x_train, x_test, y_train, y_test

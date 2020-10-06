@@ -54,8 +54,6 @@ def least_squares(y, tx):
 
 def ridge_regression(y, tx, lambda_):
     """ Ridge regression fit using normal equations """
-    # (X^T X + \lambda^{'}\mathbb{I})^{-1} X^T y
-    """ Ridge regression fit using normal equations """
     a = (tx.T @ tx) + lambda_*2*tx.shape[0] * np.eye(tx.shape[1])
     b = tx.T @ y
     w = np.linalg.solve(a, b)

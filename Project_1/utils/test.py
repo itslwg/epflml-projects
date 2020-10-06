@@ -86,3 +86,22 @@ print("Sklearn implementation accuracy: ",accuracy_score(y, clf.predict(scaled_X
 w, loss = logistic_regression(y, tx, initial_w, max_it, gamma, batch_size=1)
 y_pred = np.rint(sigmoid(tx @ w))
 print(f"Our implementation accuracy Stochastic Gradient Descent: {accuracy(y, y_pred)}")
+
+
+# Logistic regression with regularization
+lambda_ = 0.05
+reg = 2 # -> L2 or L1 regularization.
+w, loss = reg_logistic_regression(y, tx, lambda_, reg, initial_w,
+                                  max_it, gamma)
+y_pred = np.rint(sigmoid(tx @ w))
+print(f"Regularized implementation accuracy: {accuracy(y, y_pred)}")
+
+
+# Logistic regression with regularization and SGD
+lambda_ = 0.05
+reg = 2 # -> L2 or L1 regularization.
+w, loss = reg_logistic_regression(y, tx, lambda_, reg, initial_w,
+                                  max_it, gamma, batch_size=1)
+y_pred = np.rint(sigmoid(tx @ w))
+print(f"Regularized implementation accuracy: {accuracy(y, y_pred)}")
+

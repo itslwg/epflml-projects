@@ -17,6 +17,7 @@ os.chdir("utils")
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import datetime as dt
 import seaborn as sns
 %matplotlib inline
 import os
@@ -24,7 +25,13 @@ import os
 %autoreload 2
 
 from utils.implementations import reg_logistic_regression
+from helpers import sigmoid
   #+END_SRC
+
+  #+RESULTS:
+  :RESULTS:
+  # Out[81]:
+  :END:
 
   Read the training data
 
@@ -205,33 +212,83 @@ sns.heatmap(
    
 * Training
 
-  #+RESULTS:
-  :RESULTS:
-  # Out[200]:
-  :END:
-  
-#+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-X, y = create_prediction_data(train)
-#+END_SRC
-
-#+RESULTS:
-:RESULTS:
-# Out[201]:
-:END:
-
-#+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-w, loss = logistic_regression(
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+w, loss = reg_logistic_regression(
     y=y.reshape(-1, 1),
     tx=np.asarray(X),
+    lambda_=0.2,
+    reg=2,
     initial_w=np.array([0 for x in X.columns])[np.newaxis].T,
     max_iters=100,
     gamma=0.000001,
     batch_size = 1
 )
-#+END_SRC
+loss
+  #+END_SRC
 
-#+RESULTS:
-:RESULTS:
-# Out[212]:
-: 0.5152807244229209
-:END:
+  #+RESULTS:
+  :RESULTS:
+  # Out[55]:
+  : 0.5152807244928438
+  :END:
+
+* Testing
+
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+test = pd.read_csv("../data/test.csv")
+  #+END_SRC
+
+  #+RESULTS:
+  :RESULTS:
+  # Out[58]:
+  :END:
+  
+  Create prediction data with the test set
+  
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+X_test, _ = create_prediction_data(test, False)
+X_test.shape
+  #+END_SRC
+
+  #+RESULTS:
+  :RESULTS:
+  # Out[75]:
+  : (155460, 31)
+  :END:
+    
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+predictions = np.rint(sigmoid(X_test @ w))
+  #+END_SRC
+
+  #+RESULTS:
+  :RESULTS:
+  # Out[79]:
+  #+BEGIN_EXAMPLE
+    0
+    4       0.0
+    7       0.0
+    9       1.0
+    13      0.0
+    21      0.0
+    ...     ...
+    568225  0.0
+    568229  0.0
+    568230  0.0
+    568233  0.0
+    568234  1.0-
+
+    [155460 rows x 1 columns]
+  #+END_EXAMPLE
+  :END:
+
+  Save the predictions to disk
+
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+predictions.to_csv("../predictions/predictions_" + str(dt.datetime.strftime(dt.datetime.now(), "%d%m%Y")))
+  #+END_SRC
+
+  #+RESULTS:
+  :RESULTS:
+  # Out[99]:
+  :END:
+  

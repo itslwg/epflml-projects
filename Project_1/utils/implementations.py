@@ -171,7 +171,7 @@ def least_squares_SGD(y, tx, initial_w,
         batch_size=1,
         verbose=verbose
     )
-    #return ws[-1], losses[-1] --> The last loss is the loss wrt to one point
+
     return ws[-1], mse(y, tx, ws[-1])
 
 def least_squares(y, tx):

@@ -1,6 +1,4 @@
 import numpy as np
-## Note: Set the working directory to the base of the project, i.e. the "Project_1" directory
-# from utils.helpers import *
 
 from gd import *
 from sgd import *
@@ -85,7 +83,8 @@ def logistic_regression(y, tx, initial_w, max_iters,
 
 
 def reg_logistic_regression(y, tx, lambda_, reg, initial_w,
-                            max_iters, gamma, batch_size=None, verbose=False):
+                            max_iters, gamma, batch_size=None,
+                            verbose=False):
     """ Regularized logistic regression with gradient descent or stochastic gradient descent"""
     if batch_size:
         losses, ws = reg_stochastic_gradient_descent_logistic(

@@ -44,15 +44,17 @@ def least_squares_SGD(y, tx, initial_w,
 
 def least_squares(y, tx):
     """Linear regression fit using normal equations."""
-    # \hat{\beta} = (X^TX)^{-1} X^Ty
-    w = np.linalg.inv(tx.T @ tx) @ tx.T @ y
-    return w, mse(y, tx, w)
+    a = tx.T @ tx
+    b = tx.T @ y
+    w = np.linalg.solve(a, b)
+    loss = mse(y, tx, w)
+    return w, loss
 
 def ridge_regression(y, tx, lambda_):
     """ Ridge regression fit using normal equations """
-    # (X^T X + \lambda^{'}\mathbb{I})^{-1} X^T y
-    n = tx.shape[1]
-    w = np.linalg.inv( (tx.T @ tx) + (lambda_ * np.identity(n))) @ tx.T @ y
+    a = (tx.T @ tx) + lambda_*2*tx.shape[0] * np.eye(tx.shape[1])
+    b = tx.T @ y
+    w = np.linalg.solve(a, b)
     return w, mse(y, tx, w)
 
 

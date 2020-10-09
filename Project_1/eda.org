@@ -1,10 +1,3 @@
-
-  #+BEGIN_SRC elisp :session 
-(pyvenv-activate "~/courses/Machine Learning/")
-  #+END_SRC
-
-  #+RESULTS:
-
 * EDA
  
   Import packages
@@ -15,9 +8,9 @@ os.chdir("utils")
 #+END_SRC
 
 #+RESULTS:
-:RESULTS:
-0 - 29c890e3-a253-4ca7-bea6-ca66577d5f6a
-:END:
+:results:
+# Out[1]:
+:end:
 
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
 import numpy as np
@@ -36,9 +29,9 @@ from cross_validation import accuracy, f1_score
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[120]:
-  :END:
+  :results:
+  # Out[2]:
+  :end:
 
   Read the training data
 
@@ -47,9 +40,9 @@ train = pd.read_csv("../data/train.csv")
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[50]:
-  :END:
+  :results:
+  # Out[3]:
+  :end:
 
   Replace the missing values by np.nan, and try list-wise deletion
 
@@ -59,10 +52,10 @@ cc.shape
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[51]:
+  :results:
+  # Out[4]:
   : (68114, 32)
-  :END:
+  :end:
 
   We are ultimately left with a sample of 68 thousand rows, which should be an adequate sample size for prediction.
   We also want to investigate the balance of the outcome. First, subset and coerce the label vector to numeric
@@ -73,10 +66,10 @@ y
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[91]:
+  :results:
+  # Out[5]:
   : array([1, 0, 1, ..., 1, 1, 0])
-  :END:
+  :end:
 
   Plot the outcome variable
 
@@ -86,11 +79,11 @@ plt.bar(unique, counts)
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[92]:
+  :results:
+  # Out[6]:
   : <BarContainer object of 2 artists>
-  [[file:./obipy-resources/Xybpxj.png]]
-  :END:
+  [[file:./obipy-resources/xX1afL.png]]
+  :end:
 
   We have approximately 30 thousand labels that are classified as 1, and we see that the outcome is balanced among 1s 
   ans 0s. Hence, we are able to evaluate the model on a balanced outcome.

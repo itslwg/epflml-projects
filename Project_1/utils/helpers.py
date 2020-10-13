@@ -74,8 +74,8 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
             yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
 
 def sigmoid(x):
-	"""
-    
+    """
+
 
     Parameters
     ----------
@@ -88,7 +88,10 @@ def sigmoid(x):
         apply sigmoid.
 
     """
-	return 1 / (1 + np.exp(-x))
+    a = 1 / (1 + np.exp(-x))
+    a = np.where(np.isclose(a, 0.0), 1E-12, a)
+    return a
+
 
 def normalize(X):
     """
@@ -104,5 +107,5 @@ def normalize(X):
     Matrix for input features that have been normalized.
 
     """
-    
+
     return (X - np.mean(X, axis=0)) / np.std(X, axis=0)

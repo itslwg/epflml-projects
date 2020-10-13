@@ -1,6 +1,7 @@
 
 import numpy as np
 
+
 def f1_score(y_targ, y_pred):
     """
     Compute F1 score of a prediction
@@ -27,6 +28,9 @@ def f1_score(y_targ, y_pred):
 
     # True positives
     true_pos = np.count_nonzero(mask_pred[mask_targ])
+
+    if (true_pos == 0) or (total_pred == 0) or (total_targ == 0):
+        return 0.0
 
     precision = true_pos / total_pred
     recall = true_pos / total_targ
@@ -76,10 +80,11 @@ def r_squared(y_targ, y_pred):
         r squared.
 
     """
-    
+
     ss_tot = np.sum((y_targ - np.mean(y_targ))**2)
     ss_res = np.sum((y_targ - y_pred)**2)
     return 1 - (ss_res/ss_tot)
+
 
 def split_data(x, y, ratio, shuffle=True, seed=1):
     """
@@ -112,11 +117,11 @@ def split_data(x, y, ratio, shuffle=True, seed=1):
     """
     assert len(x) == len(y), "X & y must be the same length"
 
-    
+
     # Select what index we use to make the split
-    
+
     split = int(x.shape[0]*ratio)
-    
+
     if shuffle:
         np.random.seed(seed)
         train_idx = np.random.permutation(np.arange(x.shape[0]))[:split]
@@ -133,5 +138,5 @@ def split_data(x, y, ratio, shuffle=True, seed=1):
         y_train = y[:split]
         x_test = x[split:]
         y_test = y[split:]
-    
+
     return x_train, x_test, y_train, y_test

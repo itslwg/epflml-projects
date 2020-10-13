@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """some helper functions."""
 import numpy as np
+import csv
 
 
 def load_data(sub_sample=True, add_outlier=False):
@@ -72,6 +73,22 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
         end_index = min((batch_num + 1) * batch_size, data_size)
         if start_index != end_index:
             yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
+
+
+def create_csv_submission(ids, y_pred, name):
+    """
+    Creates an output file in csv format for submission to AIcrowd
+    Arguments: ids (event ids associated with each prediction)
+               y_pred (predicted class labels)
+               name (string name of .csv output file to be created)
+    """
+    with open(name, 'w') as csvfile:
+        fieldnames = ['Id', 'Prediction']
+        writer = csv.DictWriter(csvfile, delimiter=",", fieldnames=fieldnames)
+        writer.writeheader()
+        for r1, r2 in zip(ids, y_pred):
+            writer.writerow({'Id':int(r1),'Prediction':int(r2)})
+
 
 def sigmoid(x):
     """

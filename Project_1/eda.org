@@ -9,7 +9,7 @@ os.chdir("utils")
 
 #+RESULTS:
 :results:
-0 - 3c7df45a-b35e-40e6-82a6-8e9bc300663a
+0 - 7573792b-3d83-4698-99aa-4fdaa3c4b398
 :end:
 
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
@@ -29,7 +29,7 @@ from costs import reg_logistic_error
 
   #+RESULTS:
   :results:
-  # Out[132]:
+  # Out[136]:
   :end:
 
   Setup notebook settings
@@ -42,7 +42,7 @@ from costs import reg_logistic_error
 
   #+RESULTS:
   :results:
-  # Out[77]:
+  # Out[3]:
   :end:
   
 
@@ -54,7 +54,7 @@ train = pd.read_csv("../data/train.csv")
 
   #+RESULTS:
   :results:
-  # Out[133]:
+  # Out[137]:
   :end:
 
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
@@ -63,10 +63,9 @@ X = train.replace(to_replace=-999, value=np.nan)
 
   #+RESULTS:
   :results:
-  # Out[79]:
+  # Out[138]:
   :end:
   
-
   Replace the missing values by np.nan, and try list-wise deletion
 
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
@@ -75,11 +74,11 @@ cc = X.dropna()
 
   #+RESULTS:
   :results:
-  # Out[80]:
+  # Out[139]:
   :end:
 
-
-  We can also replace by the median of each corresponding column
+  We can also replace by the median of each corresponding column, and insert missing indicator variables
+  for the missingness
 
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
 X_imputed = X.fillna(value=X.median(), axis=0)
@@ -87,8 +86,142 @@ X_imputed = X.fillna(value=X.median(), axis=0)
 
   #+RESULTS:
   :results:
-  # Out[81]:
+  # Out[140]:
   :end:
+
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+nms = X.columns[X.isnull().sum() > 0]
+mi = X[nms].where(X[nms].isnull(), 1).replace(to_replace=np.nan, value=0)
+mi.columns = labels = list(np.add(nms, "__missing"))
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[141]:
+  :end:
+  
+  Merge the missing indicators with the original dataset
+
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+X_imputed = pd.concat([
+    X_imputed,
+    mi
+], axis=1)
+X_imputed
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[142]:
+  #+BEGIN_EXAMPLE
+    Id Prediction  DER_mass_MMC  DER_mass_transverse_met_lep  \
+    0       100000          s       138.470                       51.655
+    1       100001          b       160.937                       68.768
+    2       100002          b       112.406                      162.172
+    3       100003          b       143.905                       81.417
+    4       100004          b       175.864                       16.915
+    ...        ...        ...           ...                          ...
+    249995  349995          b       112.406                       71.989
+    249996  349996          b       112.406                       58.179
+    249997  349997          s       105.457                       60.526
+    249998  349998          b        94.951                       19.362
+    249999  349999          b       112.406                       72.756
+
+    DER_mass_vis  DER_pt_h  DER_deltaeta_jet_jet  DER_mass_jet_jet  \
+    0             97.827    27.980                 0.910           124.711
+    1            103.235    48.146                 2.107           225.885
+    2            125.953    35.635                 2.107           225.885
+    3             80.943     0.414                 2.107           225.885
+    4            134.805    16.405                 2.107           225.885
+    ...              ...       ...                   ...               ...
+    249995        36.548     5.042                 2.107           225.885
+    249996        68.083    22.439                 2.107           225.885
+    249997        75.839    39.757                 2.107           225.885
+    249998        68.812    13.504                 2.107           225.885
+    249999        70.831     7.479                 2.107           225.885
+
+    DER_prodeta_jet_jet  DER_deltar_tau_lep  ...  \
+    0                     2.666               3.064  ...
+    1                    -0.244               3.473  ...
+    2                    -0.244               3.148  ...
+    3                    -0.244               3.310  ...
+    4                    -0.244               3.891  ...
+    ...                     ...                 ...  ...
+    249995               -0.244               1.392  ...
+    249996               -0.244               2.585  ...
+    249997               -0.244               2.390  ...
+    249998               -0.244               3.365  ...
+    249999               -0.244               2.025  ...
+
+    DER_deltaeta_jet_jet__missing  DER_mass_jet_jet__missing  \
+    0                                 1.0                        1.0
+    1                                 0.0                        0.0
+    2                                 0.0                        0.0
+    3                                 0.0                        0.0
+    4                                 0.0                        0.0
+    ...                               ...                        ...
+    249995                            0.0                        0.0
+    249996                            0.0                        0.0
+    249997                            0.0                        0.0
+    249998                            0.0                        0.0
+    249999                            0.0                        0.0
+
+    DER_prodeta_jet_jet__missing  DER_lep_eta_centrality__missing  \
+    0                                1.0                              1.0
+    1                                0.0                              0.0
+    2                                0.0                              0.0
+    3                                0.0                              0.0
+    4                                0.0                              0.0
+    ...                              ...                              ...
+    249995                           0.0                              0.0
+    249996                           0.0                              0.0
+    249997                           0.0                              0.0
+    249998                           0.0                              0.0
+    249999                           0.0                              0.0
+
+    PRI_jet_leading_pt__missing  PRI_jet_leading_eta__missing  \
+    0                               1.0                           1.0
+    1                               1.0                           1.0
+    2                               1.0                           1.0
+    3                               0.0                           0.0
+    4                               0.0                           0.0
+    ...                             ...                           ...
+    249995                          0.0                           0.0
+    249996                          0.0                           0.0
+    249997                          1.0                           1.0
+    249998                          0.0                           0.0
+    249999                          0.0                           0.0
+
+    PRI_jet_leading_phi__missing  PRI_jet_subleading_pt__missing  \
+    0                                1.0                             1.0
+    1                                1.0                             0.0
+    2                                1.0                             0.0
+    3                                0.0                             0.0
+    4                                0.0                             0.0
+    ...                              ...                             ...
+    249995                           0.0                             0.0
+    249996                           0.0                             0.0
+    249997                           1.0                             0.0
+    249998                           0.0                             0.0
+    249999                           0.0                             0.0
+
+    PRI_jet_subleading_eta__missing  PRI_jet_subleading_phi__missing
+    0                                   1.0                              1.0
+    1                                   0.0                              0.0
+    2                                   0.0                              0.0
+    3                                   0.0                              0.0
+    4                                   0.0                              0.0
+    ...                                 ...                              ...
+    249995                              0.0                              0.0
+    249996                              0.0                              0.0
+    249997                              0.0                              0.0
+    249998                              0.0                              0.0
+    249999                              0.0                              0.0
+
+    [250000 rows x 43 columns]
+  #+END_EXAMPLE
+  :end:
+  
   
   We are ultimately left with a sample of 68 thousand rows, which should be an adequate sample size for prediction.
   We also want to investigate the balance of the outcome. First, subset and coerce the label vector to numeric
@@ -100,7 +233,7 @@ y
 
   #+RESULTS:
   :results:
-  # Out[82]:
+  # Out[143]:
   : array([1, 0, 1, ..., 1, 1, 0])
   :end:
 
@@ -113,9 +246,9 @@ plt.bar(unique, counts)
 
   #+RESULTS:
   :results:
-  # Out[83]:
+  # Out[144]:
   : <BarContainer object of 2 artists>
-  [[file:./obipy-resources/PIgQhJ.png]]
+  [[file:./obipy-resources/afOFtS.png]]
   :end:
 
   We have approximately 30 thousand labels that are classified as 1, and we see that the outcome is balanced among 1s 
@@ -130,7 +263,7 @@ X = cc.drop(columns=c)
 
   #+RESULTS:
   :results:
-  # Out[84]:
+  # Out[145]:
   :end:
   
   Standardize the feature set for prediction
@@ -141,7 +274,7 @@ X_standardized = (X - X.mean(axis=0)) / X.std(axis=0)
 
   #+RESULTS:
   :results:
-  # Out[85]:
+  # Out[146]:
   :end:
 
   Augment the dataset with 1s, for the intercept of the model.
@@ -160,7 +293,7 @@ X_model.iloc[:5, :5]
 
   #+RESULTS:
   :results:
-  # Out[86]:
+  # Out[147]:
   #+BEGIN_EXAMPLE
     beta0  DER_mass_MMC  DER_mass_transverse_met_lep  DER_mass_vis  DER_pt_h
     0     1.0      0.257669                     0.532831      0.474607 -1.093446
@@ -170,7 +303,6 @@ X_model.iloc[:5, :5]
     23    1.0      0.307232                    -1.123057      0.812305  0.820829
   #+END_EXAMPLE
   :end:
-
   
   To conduct the same data-preprocessing on the test set, we prepare a function for these operations
   
@@ -184,8 +316,9 @@ def missing_data_handling(raw_sample, method="cc", imp_percentage=None):
     raw_sample: Numpy array
         Sample to be handled.
     method: String
-        Missing data handler. Must be one of 'cc' (for complete case)
-        or 'si' (for simple, median imputation).
+        Missing data handler. Must be one of 'cc' (for complete case),
+        'si' (for simple, median imputation), 'mediani' (for median, missing
+        indicator imputation), or 'meani' (for mean, missing indicator imputation)
     imp_percentage: Float
         If method is 'si' and imp_percentage is specified, then only
         the features with proportions of missing data corresponding to
@@ -198,13 +331,28 @@ def missing_data_handling(raw_sample, method="cc", imp_percentage=None):
     raw_sample: Numpy array
         Sample with missing data handled.
     """
-    assert method in ['cc', 'si'], "Parameter method must be one of 'cc', 'si'"
+    assert method in ['cc', 'si', 'mediani', 'meani'], "Parameter method must be one of 'cc', 'si', or 'mi'"
     sample = raw_sample.replace(to_replace=-999, value=np.nan)
     
     if method == 'cc':
         sample = sample.dropna()
     elif method == 'si':
         sample = sample.fillna(value=sample.median(), axis=0)
+    elif method == 'mediani' or method == 'meani':
+        imputed = ""
+        if method == 'mediani':
+            imputed = sample.fillna(value=sample.median(), axis=0)
+        else:
+            imputed = sample.fillna(value=sample.mean(), axis=0)
+        # Create missing indicator columns
+        nms = sample.columns[sample.isnull().sum() > 0]
+        mindicator = sample[nms].where(sample[nms].isnull(), 1).replace(to_replace=np.nan, value=0)
+        mindicator.columns = list(np.add(nms, "__missing"))
+        # Merge samples
+        sample = pd.concat([
+            imputed,
+            mindicator
+        ], axis=1)
         
     return sample 
 
@@ -221,9 +369,9 @@ def conduct_data_preparation(raw_sample, missing_method="cc",
     if include_outcome:
         y = np.where(np.asarray(sample.loc[:, 'Prediction']) == 's', 1, 0)
     c = ['Id', 'Prediction']
-    X = sample.drop(columns=c)
+    sample = sample.drop(columns=c)
 
-    return X, y
+    return sample, y
 
 
 def prepare_features(X):
@@ -245,19 +393,88 @@ def prepare_features(X):
 
   #+RESULTS:
   :results:
-  # Out[134]:
+  # Out[148]:
   :end:
 
   Prepare the data with missing imputation
 
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-X, y = conduct_data_preparation(train, missing_method='si')
+X, y = conduct_data_preparation(train, missing_method='meani')
   #+END_SRC
 
   #+RESULTS:
   :results:
-  # Out[136]:
+  # Out[149]:
   :end:
+
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+X.head()
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[150]:
+  #+BEGIN_EXAMPLE
+    DER_mass_MMC  DER_mass_transverse_met_lep  DER_mass_vis  DER_pt_h  \
+    0    138.470000                       51.655        97.827    27.980
+    1    160.937000                       68.768       103.235    48.146
+    2    121.858528                      162.172       125.953    35.635
+    3    143.905000                       81.417        80.943     0.414
+    4    175.864000                       16.915       134.805    16.405
+
+    DER_deltaeta_jet_jet  DER_mass_jet_jet  DER_prodeta_jet_jet  \
+    0              0.910000         124.71100             2.666000
+    1              2.403735         371.78336            -0.821688
+    2              2.403735         371.78336            -0.821688
+    3              2.403735         371.78336            -0.821688
+    4              2.403735         371.78336            -0.821688
+
+    DER_deltar_tau_lep  DER_pt_tot  DER_sum_pt  ...  \
+    0               3.064      41.928     197.760  ...
+    1               3.473       2.078     125.157  ...
+    2               3.148       9.336     197.814  ...
+    3               3.310       0.414      75.968  ...
+    4               3.891      16.405      57.983  ...
+
+    DER_deltaeta_jet_jet__missing  DER_mass_jet_jet__missing  \
+    0                            1.0                        1.0
+    1                            0.0                        0.0
+    2                            0.0                        0.0
+    3                            0.0                        0.0
+    4                            0.0                        0.0
+
+    DER_prodeta_jet_jet__missing  DER_lep_eta_centrality__missing  \
+    0                           1.0                              1.0
+    1                           0.0                              0.0
+    2                           0.0                              0.0
+    3                           0.0                              0.0
+    4                           0.0                              0.0
+
+    PRI_jet_leading_pt__missing  PRI_jet_leading_eta__missing  \
+    0                          1.0                           1.0
+    1                          1.0                           1.0
+    2                          1.0                           1.0
+    3                          0.0                           0.0
+    4                          0.0                           0.0
+
+    PRI_jet_leading_phi__missing  PRI_jet_subleading_pt__missing  \
+    0                           1.0                             1.0
+    1                           1.0                             0.0
+    2                           1.0                             0.0
+    3                           0.0                             0.0
+    4                           0.0                             0.0
+
+    PRI_jet_subleading_eta__missing  PRI_jet_subleading_phi__missing
+    0                              1.0                              1.0
+    1                              0.0                              0.0
+    2                              0.0                              0.0
+    3                              0.0                              0.0
+    4                              0.0                              0.0
+
+    [5 rows x 41 columns]
+  #+END_EXAMPLE
+  :end:
+  
 
 ** Exploring the distributions of the variables
 
@@ -324,7 +541,7 @@ def split_data(x, y, ratio, shuffle=True, seed=1):
 
   #+RESULTS:
   :results:
-  # Out[137]:
+  # Out[7]:
   :end:
   
   Now, we don't want to conduct the data preparation on the full sample, as that would 
@@ -336,7 +553,7 @@ X_train, X_test, y_train, y_test =  split_data(X, y, 0.9)
 
   #+RESULTS:
   :results:
-  # Out[138]:
+  # Out[53]:
   :end:
 
   and then prepare the features
@@ -348,7 +565,7 @@ X_test = prepare_features(X_test)
 
   #+RESULTS:
   :results:
-  # Out[139]:
+  # Out[54]:
   :end:
 
   Let's try to fit a regularized logistic regression model
@@ -357,29 +574,30 @@ X_test = prepare_features(X_test)
 w, loss = reg_logistic_regression(
     y=y_train.reshape(-1, 1),
     tx=np.asarray(X_train),
-    lambda_=0.5,
-    reg=1,
-    initial_w=np.array([0.001 for x in X_train.columns])[np.newaxis].T,
-    max_iters=50,
-    gamma=0.05,
-    batch_size=1
+    lambda_=0.0001,
+    reg=2,
+    initial_w=np.array([-0.01 for x in X_train.columns])[np.newaxis].T,
+    max_iters=100,
+    gamma=0.9,
+    batch_size=1,
+    verbose=True
 )
   #+END_SRC
 
   #+RESULTS:
   :results:
-  # Out[157]:
+  # Out[105]:
   :end:
 
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-preds = np.rint(sigmoid(X_train @ w))
-accuracy(y_train.reshape(-1, 1), preds)
+preds = np.rint(sigmoid(X_test @ w))
+accuracy(y_test.reshape(-1, 1), preds)
   #+END_SRC
 
   #+RESULTS:
   :results:
-  # Out[158]:
-  : 0.6179955555555556
+  # Out[106]:
+  : 0.7536
   :end:
   
   
@@ -446,7 +664,7 @@ class RegularizedLogisticRegression(Classifier):
 
   #+RESULTS:
   :results:
-  # Out[96]:
+  # Out[107]:
   :end:
 
   Define function for selecting the ks for cross-validation (from the lab)
@@ -465,7 +683,7 @@ def build_k_indices(y, k_fold, seed):
 
   #+RESULTS:
   :results:
-  # Out[159]:
+  # Out[108]:
   :end:
   
   Define the cross-validation function, utilizing the build_k_indices,
@@ -503,7 +721,7 @@ def cross_validation(y, x, k_indices, comb,
 
   #+RESULTS:
   :results:
-  # Out[160]:
+  # Out[109]:
   :end:
 
   Utilise a grid of hyperparameters, and a grid-search, for selecting the best hyperparameters for
@@ -562,7 +780,7 @@ def select_best_model(grid, y, X, k_fold, seed=1, verbose=False):
 
   #+RESULTS:
   :results:
-  # Out[161]:
+  # Out[110]:
   :end:
   
   Test using simple grid. We do the hyperparameter tuning on training set, and the corresponding test sets
@@ -571,11 +789,11 @@ def select_best_model(grid, y, X, k_fold, seed=1, verbose=False):
  
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
 grid = {
-    'gamma': [0.01, 0.1],
-    'lambda_': [0.1, 0.2],
+    'gamma': np.arange(0.5, 1, 0.1),
+    'lambda_': [0.001],
     'reg': [1, 2]
 }
-acc, loss, params = select_best_model(grid, y_train, np.asarray(X_train), 2, verbose=True)
+acc, loss, params = select_best_model(grid, y_train, np.asarray(X_train), 3, verbose=True)
 "Test accuracy: {acc}, Test loss: {loss}, Best parameters: {params}".format(
     acc=acc,
     loss=loss,
@@ -585,8 +803,8 @@ acc, loss, params = select_best_model(grid, y_train, np.asarray(X_train), 2, ver
 
   #+RESULTS:
   :results:
-  # Out[162]:
-  : "Test accuracy: 0.7261866666666666, Test loss: 0.5712946838377808, Best parameters: {'gamma': 0.1, 'lambda_': 0.1, 'reg': 2}"
+  # Out[111]:
+  : "Test accuracy: 0.7502977777777778, Test loss: 1.250866372781578, Best parameters: {'gamma': 0.8999999999999999, 'lambda_': 0.001, 'reg': 2}"
   :end:
 
   Train the model on the full training set using the "best" parameters found from the hyperparameter tuning.
@@ -595,25 +813,27 @@ acc, loss, params = select_best_model(grid, y_train, np.asarray(X_train), 2, ver
 clf = RegularizedLogisticRegression(
     ,**params
 )
-X, y = conduct_data_preparation(train, missing_method='si')
+X, y = conduct_data_preparation(train, missing_method='meani')
 X_model = prepare_features(X)
 w, loss = clf.fit(tx=np.array(X_model), y=y.reshape(-1, 1))
   #+END_SRC
 
   #+RESULTS:
   :results:
-  # Out[163]:
+  # Out[113]:
   :end:
     
   Check predictions on the sample
 
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
 predictions = np.rint(sigmoid(X_model @ w))
+len(w)
   #+END_SRC
 
   #+RESULTS:
   :results:
-  # Out[164]:
+  # Out[130]:
+  : 42
   :end:
   
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
@@ -632,8 +852,8 @@ f1 = f1_score(
 
   #+RESULTS:
   :results:
-  # Out[166]:
-  : 'Accuracy: 0.7259720000000001, F1-score: 0.5567123713141326'
+  # Out[115]:
+  : 'Accuracy: 0.7504919999999999, F1-score: 0.5871670141301829'
   :end:
   
 * Testing
@@ -644,38 +864,100 @@ test = pd.read_csv("../data/test.csv")
 
   #+RESULTS:
   :results:
-  # Out[167]:
+  # Out[151]:
   :end:
   
   Create prediction data with the test set
   
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-X_test, _ = conduct_data_preparation(test, missing_method='si', include_outcome=False)
+X_test, _ = conduct_data_preparation(test, missing_method='meani', include_outcome=False)
 X_model_test = prepare_features(X_test)
   #+END_SRC
 
   #+RESULTS:
   :results:
-  # Out[168]:
+  # Out[155]:
   :end:
-    
+
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-predictions = np.rint(sigmoid(X_model_test @ w))
-predictions[predictions == 0] = -1
+X_model_test.head()
   #+END_SRC
 
   #+RESULTS:
   :results:
-  # Out[171]:
+  # Out[157]:
   #+BEGIN_EXAMPLE
-    array([[-1.],
-    [-1.],
-    [-1.],
-    ...,
-    [-1.],
-    [ 1.],
-    [-1.]])
+    beta0  DER_mass_MMC  DER_mass_transverse_met_lep  DER_mass_vis  DER_pt_h  \
+    0    1.0      0.000000                     0.856955     -1.413408 -0.865549
+    1    1.0     -0.295946                     0.515112      0.168668 -0.123768
+    2    1.0     -0.077989                     0.196862      0.376431 -0.848157
+    3    1.0      0.267555                    -0.527057      0.399408 -0.769695
+    4    1.0     -0.912540                     0.946887     -0.553227  0.502601
+
+    DER_deltaeta_jet_jet  DER_mass_jet_jet  DER_prodeta_jet_jet  \
+    0              0.000000      5.287572e-16        -1.722525e-16
+    1              0.000000      5.287572e-16        -1.722525e-16
+    2              0.000000      5.287572e-16        -1.722525e-16
+    3              0.000000      5.287572e-16        -1.722525e-16
+    4             -1.125162      7.641942e-01         2.548787e-01
+
+    DER_deltar_tau_lep  DER_pt_tot  ...  DER_deltaeta_jet_jet__missing  \
+    0           -1.886220   -0.733285  ...                      -0.640885
+    1           -0.418231   -0.749691  ...                      -0.640885
+    2            0.488205   -0.682689  ...                      -0.640885
+    3            0.560002   -0.454431  ...                      -0.640885
+    4           -1.725959    2.675514  ...                       1.560340
+
+    DER_mass_jet_jet__missing  DER_prodeta_jet_jet__missing  \
+    0                  -0.640885                     -0.640885
+    1                  -0.640885                     -0.640885
+    2                  -0.640885                     -0.640885
+    3                  -0.640885                     -0.640885
+    4                   1.560340                      1.560340
+
+    DER_lep_eta_centrality__missing  PRI_jet_leading_pt__missing  \
+    0                        -0.640885                    -1.224013
+    1                        -0.640885                     0.816983
+    2                        -0.640885                    -1.224013
+    3                        -0.640885                    -1.224013
+    4                         1.560340                     0.816983
+
+    PRI_jet_leading_eta__missing  PRI_jet_leading_phi__missing  \
+    0                     -1.224013                     -1.224013
+    1                      0.816983                      0.816983
+    2                     -1.224013                     -1.224013
+    3                     -1.224013                     -1.224013
+    4                      0.816983                      0.816983
+
+    PRI_jet_subleading_pt__missing  PRI_jet_subleading_eta__missing  \
+    0                       -0.640885                        -0.640885
+    1                       -0.640885                        -0.640885
+    2                       -0.640885                        -0.640885
+    3                       -0.640885                        -0.640885
+    4                        1.560340                         1.560340
+
+    PRI_jet_subleading_phi__missing
+    0                        -0.640885
+    1                        -0.640885
+    2                        -0.640885
+    3                        -0.640885
+    4                         1.560340
+
+    [5 rows x 42 columns]
   #+END_EXAMPLE
+  :end:
+  
+    
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+predictions = np.rint(sigmoid(X_model_test @ w))
+predictions[predictions == 0] = -1
+len(predictions)
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[160]:
+  : 568238
   :end:
 
   Generate submission
@@ -687,6 +969,6 @@ create_csv_submission(ids, predictions, "../predictions/submission_16102020.csv"
 
   #+RESULTS:
   :results:
-  # Out[175]:
+  # Out[159]:
   :end:
   

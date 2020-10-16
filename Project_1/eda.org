@@ -9,7 +9,7 @@ os.chdir("utils")
 
 #+RESULTS:
 :results:
-# Out[1]:
+0 - 3c7df45a-b35e-40e6-82a6-8e9bc300663a
 :end:
 
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
@@ -17,21 +17,34 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import datetime as dt
-import seaborn as sns
-%matplotlib inline
-import os
-%load_ext autoreload
-%autoreload 2
+import itertools as it
+
+from abc import ABC, abstractmethod
 
 from implementations import reg_logistic_regression
-from helpers import sigmoid
+from helpers import sigmoid, create_csv_submission
 from cross_validation import accuracy, f1_score
+from costs import reg_logistic_error
   #+END_SRC
 
   #+RESULTS:
   :results:
-  # Out[2]:
+  # Out[132]:
   :end:
+
+  Setup notebook settings
+  
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+%matplotlib inline
+%load_ext autoreload
+%autoreload 2
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[77]:
+  :end:
+  
 
   Read the training data
 
@@ -41,22 +54,42 @@ train = pd.read_csv("../data/train.csv")
 
   #+RESULTS:
   :results:
-  # Out[3]:
+  # Out[133]:
   :end:
 
-  Replace the missing values by np.nan, and try list-wise deletion
-
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-cc = train.replace(to_replace=-999, value=np.nan).dropna()
-cc.shape
+X = train.replace(to_replace=-999, value=np.nan)
   #+END_SRC
 
   #+RESULTS:
   :results:
-  # Out[4]:
-  : (68114, 32)
+  # Out[79]:
+  :end:
+  
+
+  Replace the missing values by np.nan, and try list-wise deletion
+
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+cc = X.dropna()
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[80]:
   :end:
 
+
+  We can also replace by the median of each corresponding column
+
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+X_imputed = X.fillna(value=X.median(), axis=0)
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[81]:
+  :end:
+  
   We are ultimately left with a sample of 68 thousand rows, which should be an adequate sample size for prediction.
   We also want to investigate the balance of the outcome. First, subset and coerce the label vector to numeric
   
@@ -67,7 +100,7 @@ y
 
   #+RESULTS:
   :results:
-  # Out[5]:
+  # Out[82]:
   : array([1, 0, 1, ..., 1, 1, 0])
   :end:
 
@@ -80,9 +113,9 @@ plt.bar(unique, counts)
 
   #+RESULTS:
   :results:
-  # Out[6]:
+  # Out[83]:
   : <BarContainer object of 2 artists>
-  [[file:./obipy-resources/xX1afL.png]]
+  [[file:./obipy-resources/PIgQhJ.png]]
   :end:
 
   We have approximately 30 thousand labels that are classified as 1, and we see that the outcome is balanced among 1s 
@@ -96,9 +129,9 @@ X = cc.drop(columns=c)
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[93]:
-  :END:
+  :results:
+  # Out[84]:
+  :end:
   
   Standardize the feature set for prediction
 
@@ -107,9 +140,9 @@ X_standardized = (X - X.mean(axis=0)) / X.std(axis=0)
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[94]:
-  :END:
+  :results:
+  # Out[85]:
+  :end:
 
   Augment the dataset with 1s, for the intercept of the model.
 
@@ -126,8 +159,8 @@ X_model.iloc[:5, :5]
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[95]:
+  :results:
+  # Out[86]:
   #+BEGIN_EXAMPLE
     beta0  DER_mass_MMC  DER_mass_transverse_met_lep  DER_mass_vis  DER_pt_h
     0     1.0      0.257669                     0.532831      0.474607 -1.093446
@@ -136,7 +169,8 @@ X_model.iloc[:5, :5]
     11    1.0     -0.132872                    -0.812491     -0.068375 -1.056286
     23    1.0      0.307232                    -1.123057      0.812305  0.820829
   #+END_EXAMPLE
-  :END:
+  :end:
+
   
   To conduct the same data-preprocessing on the test set, we prepare a function for these operations
   
@@ -164,14 +198,15 @@ def missing_data_handling(raw_sample, method="cc", imp_percentage=None):
     raw_sample: Numpy array
         Sample with missing data handled.
     """
-    assert method in ['cc', ''], "Parameter method must be one of 'cc', 'si'"
+    assert method in ['cc', 'si'], "Parameter method must be one of 'cc', 'si'"
+    sample = raw_sample.replace(to_replace=-999, value=np.nan)
     
     if method == 'cc':
-        raw_sample = raw_sample.replace(to_replace=-999, value=np.nan).dropna()
+        sample = sample.dropna()
     elif method == 'si':
-        pass
-
-    return raw_sample
+        sample = sample.fillna(value=sample.median(), axis=0)
+        
+    return sample 
 
 def conduct_data_preparation(raw_sample, missing_method="cc", 
                              include_outcome=True):
@@ -184,15 +219,15 @@ def conduct_data_preparation(raw_sample, missing_method="cc",
     ## Subset outcome 
     y = None
     if include_outcome:
-        y = np.where(np.asarray(cc.loc[:, 'Prediction']) == 's', 1, 0)
+        y = np.where(np.asarray(sample.loc[:, 'Prediction']) == 's', 1, 0)
     c = ['Id', 'Prediction']
-    X = cc.drop(columns=c)
+    X = sample.drop(columns=c)
 
     return X, y
 
 
-def prepare_features(X, include_outcome=True):
-    """Missing data handling, data subsettting, and augmentation."""
+def prepare_features(X):
+    """Missing data handling and augmentation."""
     ## Standardize sample
     X_standardized = (X - X.mean(axis=0)) / X.std(axis=0)
     ## Make prediction data
@@ -209,18 +244,20 @@ def prepare_features(X, include_outcome=True):
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[155]:
-  :END:
+  :results:
+  # Out[134]:
+  :end:
+
+  Prepare the data with missing imputation
 
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-X, y = conduct_data_preparation(train)
+X, y = conduct_data_preparation(train, missing_method='si')
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[156]:
-  :END:
+  :results:
+  # Out[136]:
+  :end:
 
 ** Exploring the distributions of the variables
 
@@ -229,10 +266,10 @@ f = X.hist(figsize=(15, 15), bins = 100)
    #+END_SRC
 
    #+RESULTS:
-   :RESULTS:
-   # Out[98]:
-   [[file:./obipy-resources/p6tweu.png]]
-   :END:
+   :results:
+   # Out[91]:
+   [[file:./obipy-resources/FlHXxv.png]]
+   :end:
    
    #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
 corr = X.corr()
@@ -253,6 +290,9 @@ sns.heatmap(
    :END:
    
 * Training
+  :PROPERTIES:
+  :ORDERED:  t
+  :END:
 
   Define a function similar to that in implementations, but constructed to work with dataframes
 
@@ -283,120 +323,318 @@ def split_data(x, y, ratio, shuffle=True, seed=1):
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[100]:
-  :END:
+  :results:
+  # Out[137]:
+  :end:
   
   Now, we don't want to conduct the data preparation on the full sample, as that would 
   cause information leakage, and biased oos performance. Hence we want to first split the training data
 
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
 X_train, X_test, y_train, y_test =  split_data(X, y, 0.9)
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[138]:
+  :end:
+
+  and then prepare the features
+  
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
 X_train = prepare_features(X_train)
 X_test = prepare_features(X_test)
-X_train.iloc[:5, :5]
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[143]:
-  #+BEGIN_EXAMPLE
-    beta0  DER_mass_MMC  DER_mass_transverse_met_lep  DER_mass_vis  \
-    50268     1.0     -0.207020                    -0.805196     -0.082845
-    184503    1.0      0.267812                     0.334499      0.610683
-    8553      1.0     -0.496879                     0.155967     -0.264689
-    95963     1.0      0.522681                     1.516183      0.488053
-    220347    1.0     -0.276408                    -0.220763      0.014418
+  :results:
+  # Out[139]:
+  :end:
 
-    DER_pt_h
-    50268  -1.106932
-    184503  0.451654
-    8553   -1.264968
-    95963  -0.824446
-    220347 -0.657742
-  #+END_EXAMPLE
-  :END:
-
-  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-X_train.iloc[:5, :5]
-  #+END_SRC
-
-  #+RESULTS:
-  :RESULTS:
-  # Out[144]:
-  #+BEGIN_EXAMPLE
-    beta0  DER_mass_MMC  DER_mass_transverse_met_lep  DER_mass_vis  \
-    50268     1.0     -0.207020                    -0.805196     -0.082845
-    184503    1.0      0.267812                     0.334499      0.610683
-    8553      1.0     -0.496879                     0.155967     -0.264689
-    95963     1.0      0.522681                     1.516183      0.488053
-    220347    1.0     -0.276408                    -0.220763      0.014418
-
-    DER_pt_h
-    50268  -1.106932
-    184503  0.451654
-    8553   -1.264968
-    95963  -0.824446
-    220347 -0.657742
-  #+END_EXAMPLE
-  :END:
+  Let's try to fit a regularized logistic regression model
   
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
 w, loss = reg_logistic_regression(
     y=y_train.reshape(-1, 1),
     tx=np.asarray(X_train),
-    lambda_=0.2,
+    lambda_=0.5,
     reg=1,
-    initial_w=np.array([0 for x in X_train.columns])[np.newaxis].T,
-    max_iters=100,
-    gamma=0.00011,
-    batch_size=50
+    initial_w=np.array([0.001 for x in X_train.columns])[np.newaxis].T,
+    max_iters=50,
+    gamma=0.05,
+    batch_size=1
 )
-loss
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[145]:
-  : 0.5157097905083584
-  :END:
-
-  Evaluate the oos performance
+  :results:
+  # Out[157]:
+  :end:
 
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-predictions = np.rint(sigmoid(X_test @ w))
-predictions.head()
+preds = np.rint(sigmoid(X_train @ w))
+accuracy(y_train.reshape(-1, 1), preds)
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[146]:
-  #+BEGIN_EXAMPLE
-    0
-    138436  0.0
-    158838  1.0
-    139350  0.0
-    104841  0.0
-    12058   1.0
-  #+END_EXAMPLE
-  :END:
+  :results:
+  # Out[158]:
+  : 0.6179955555555556
+  :end:
+  
+  
+  Considering that all our models are similar in construction, and have similar method attached to them, let's define
+  base classes for classifiers that enforce certain methods and a subclass for the specific classifier.
+  
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+class Classifier(ABC):
+    """Metaclass for classifier classes."""
+
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def fit(self, y, tx):
+        raise NotImplementedError
+
+    @abstractmethod
+    def predict(self, w, tx):
+        raise NotImplementedError
+
+    @abstractmethod
+    def compute_loss(self, y, tx, w):
+        raise NotImplementedError
+    
+
+class RegularizedLogisticRegression(Classifier):
+    """Implementation of regularized logistic regression."""
+
+    def __init__(self, gamma, lambda_, reg):
+        self.gamma = gamma
+        self.lambda_ = lambda_
+        self.reg = reg
+
+    def fit(self, y, tx):
+        return self.__reg_logistic_regression(y, tx)
+
+    def predict(self, w, oos):
+        return np.rint(sigmoid(oos @ w))
+
+    def __reg_logistic_regression(self, y, tx):
+
+        return reg_logistic_regression(
+            y=y,
+            tx=tx,
+            lambda_=self.lambda_,
+            reg=self.reg,
+            initial_w=np.zeros((tx.shape[1], 1)),
+            max_iters=100,
+            gamma=self.gamma,
+            batch_size=1  
+        )
+
+    def compute_loss(self, y, tx, w):
+        
+        return reg_logistic_error(
+            y=y,
+            tx=tx,
+            w=w,
+            lambda_=self.lambda_,
+            reg=self.reg
+        )
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[96]:
+  :end:
+
+  Define function for selecting the ks for cross-validation (from the lab)
+  
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+def build_k_indices(y, k_fold, seed):
+    """Build k indices for k-fold."""
+    num_row = y.shape[0]
+    interval = int(num_row / k_fold)
+    np.random.seed(seed)
+    indices = np.random.permutation(num_row)
+    k_indices = [indices[k * interval: (k + 1) * interval]
+                 for k in range(k_fold)]
+    return np.array(k_indices)
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[159]:
+  :end:
+  
+  Define the cross-validation function, utilizing the build_k_indices,
+  
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+def cross_validation(y, x, k_indices, comb,
+                     classifier=RegularizedLogisticRegression):
+    """Return the loss of ridge regression."""
+        
+    test_losses = [0] * k_indices.shape[0]
+    test_acc = [0] * k_indices.shape[0]
+    for k in np.arange(k_indices.shape[0]):
+        # Augment and set indices
+        mask = np.arange(k_indices.shape[0]) == k
+        tri = k_indices[~mask].ravel()
+        tei = k_indices[mask].ravel()
+        # Subset for trainin and test sets
+        x_train = x[tri]
+        x_test = x[tei]
+        y_train = y[tri]
+        y_test = y[tei]
+        # Run prediction
+        clf = classifier(**comb)
+        w, loss = clf.fit(y_train, x_train)
+        test_losses[k] = clf.compute_loss(
+            y=y_test,
+            tx=x_test,
+            w=w
+        )
+        predictions = clf.predict(w, x_test)
+        test_acc[k] = accuracy(y_test, predictions)
+
+    return np.mean(test_losses), np.mean(test_acc)
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[160]:
+  :end:
+
+  Utilise a grid of hyperparameters, and a grid-search, for selecting the best hyperparameters for
+  the model
+  
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+def select_best_model(grid, y, X, k_fold, seed=1, verbose=False):
+    """Evaluate candidate model over grid of hyperparameters.
+
+    Parameters
+    ----------
+    grid: Dict
+         The hyperparameter grid, the keys being the hyperparamaters
+         and corresponding lists are the potential values.
+
+    Returns
+    -------
+    loss_te : Real scalar
+         The loss of the best performing candiate model, measures
+         by its oos accuracy.
+    best_params : Dictionary
+         Dictionary of parameter-value combinations 
+         for the best performing candidate model.
+    """
+    s = np.random.seed(seed)
+    k_indices = build_k_indices(y, k_fold, s)
+    k, v = zip(*grid.items())
+    permutations = [dict(zip(k, values)) for values in it.product(*v)]
+
+    ## Reshape data to correct format
+    y = y.reshape(-1, 1)
+    test_loss = [0] * len(permutations)
+    test_acc = [0] * len(permutations)
+    for k, comb in enumerate(permutations):
+        np.random.seed(seed)
+        teloss, teacc = cross_validation(
+            y=y,
+            x=X,
+            k_indices=k_indices,
+            comb=comb
+        )
+        if verbose:
+            print("For Params: " + str(comb) +
+                  "\n \t Mean Accuracy: " + str(teacc),
+                  ", Mean Log. loss: " + str(teloss))
+
+        test_loss[k] = teloss
+        test_acc[k] = teacc
+            
+    acc = max(test_acc)
+    loss = min(test_loss)
+    best_params = permutations[np.argmax(test_acc)]
+
+    return (acc, loss, best_params)
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[161]:
+  :end:
+  
+  Test using simple grid. We do the hyperparameter tuning on training set, and the corresponding test sets
+  in the cross validation are validation sets, rather than test sets. The test set is left for the
+  last testing.
+ 
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+grid = {
+    'gamma': [0.01, 0.1],
+    'lambda_': [0.1, 0.2],
+    'reg': [1, 2]
+}
+acc, loss, params = select_best_model(grid, y_train, np.asarray(X_train), 2, verbose=True)
+"Test accuracy: {acc}, Test loss: {loss}, Best parameters: {params}".format(
+    acc=acc,
+    loss=loss,
+    params=params
+)
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[162]:
+  : "Test accuracy: 0.7261866666666666, Test loss: 0.5712946838377808, Best parameters: {'gamma': 0.1, 'lambda_': 0.1, 'reg': 2}"
+  :end:
+
+  Train the model on the full training set using the "best" parameters found from the hyperparameter tuning.
+  
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+clf = RegularizedLogisticRegression(
+    ,**params
+)
+X, y = conduct_data_preparation(train, missing_method='si')
+X_model = prepare_features(X)
+w, loss = clf.fit(tx=np.array(X_model), y=y.reshape(-1, 1))
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[163]:
+  :end:
+    
+  Check predictions on the sample
+
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+predictions = np.rint(sigmoid(X_model @ w))
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[164]:
+  :end:
   
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
 acc = accuracy(
-    y_targ=y_test,
+    y_targ=y,
     y_pred=np.array(predictions).ravel()
 )
 f1 = f1_score(
-    y_targ=y_test,
+    y_targ=y,
     y_pred=np.array(predictions).ravel()
 )
-print("Accuracy: {acc}, F1-score: {f1}".format(acc=acc, f1=f1))
+"Accuracy: {acc}, F1-score: {f1}".format(
+    acc=acc, f1=f1
+)
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[147]:
-  :END:
+  :results:
+  # Out[166]:
+  : 'Accuracy: 0.7259720000000001, F1-score: 0.5567123713141326'
+  :end:
   
 * Testing
 
@@ -405,56 +643,50 @@ test = pd.read_csv("../data/test.csv")
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[66]:
-  :END:
+  :results:
+  # Out[167]:
+  :end:
   
   Create prediction data with the test set
   
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-X_test, _ = create_prediction_data(test, False)
-X_test.shape
+X_test, _ = conduct_data_preparation(test, missing_method='si', include_outcome=False)
+X_model_test = prepare_features(X_test)
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[75]:
-  : (155460, 31)
-  :END:
+  :results:
+  # Out[168]:
+  :end:
     
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-predictions = np.rint(sigmoid(X_test @ w))
+predictions = np.rint(sigmoid(X_model_test @ w))
+predictions[predictions == 0] = -1
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[79]:
+  :results:
+  # Out[171]:
   #+BEGIN_EXAMPLE
-    0
-    4       0.0
-    7       0.0
-    9       1.0
-    13      0.0
-    21      0.0
-    ...     ...
-    568225  0.0
-    568229  0.0
-    568230  0.0
-    568233  0.0
-    568234  1.0-
-
-    [155460 rows x 1 columns]
+    array([[-1.],
+    [-1.],
+    [-1.],
+    ...,
+    [-1.],
+    [ 1.],
+    [-1.]])
   #+END_EXAMPLE
-  :END:
+  :end:
 
-  Save the predictions to disk
-
+  Generate submission
+  
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
-predictions.to_csv("../predictions/predictions_" + str(dt.datetime.strftime(dt.datetime.now(), "%d%m%Y")))
+ids = test.Id
+create_csv_submission(ids, predictions, "../predictions/submission_16102020.csv")
   #+END_SRC
 
   #+RESULTS:
-  :RESULTS:
-  # Out[99]:
-  :END:
+  :results:
+  # Out[175]:
+  :end:
   

@@ -147,3 +147,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+Project_1/data/data.zip
+Project_1/data/raw/test.csv
+Project_1/data/raw/train.csv
+Project_1/data/raw/sample-submission.csv
+.DS_Store
+.DS_Store

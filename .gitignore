@@ -153,3 +153,4 @@ Project_1/data/raw/train.csv
 Project_1/data/raw/sample-submission.csv
 .DS_Store
 .DS_Store
+*.zip

@@ -86,7 +86,8 @@ def logistic_regression(y, tx, initial_w, max_iters,
 
 def reg_logistic_regression(y, tx, lambda_, reg, initial_w,
                             max_iters, gamma, batch_size=None,
-                            verbose=False):
+                            verbose=False, early_stopping=True,
+                            tol = 0.00001, patience = 5):
     """ Regularized logistic regression with gradient descent or stochastic gradient descent"""
     if batch_size:
         losses, ws = reg_stochastic_gradient_descent_logistic(
@@ -98,7 +99,10 @@ def reg_logistic_regression(y, tx, lambda_, reg, initial_w,
             gamma=gamma, 
             lambda_=lambda_,
             reg=reg,
-            verbose=verbose   
+            verbose=verbose,
+            early_stopping=early_stopping,
+            tol=tol,
+            patience=patience
         )
     else:
         losses, ws = reg_gradient_descent_logistic(

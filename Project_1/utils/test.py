@@ -107,7 +107,7 @@ print(f"Regularized implementation accuracy: {accuracy(y, y_pred)}")
 lambda_ = 0.05
 reg = 2 # -> L2 or L1 regularization.
 w, loss = reg_logistic_regression(y, tx, lambda_, reg, initial_w,
-                                  1000, gamma, batch_size=1)
+                                  1000, gamma, batch_size=1, patience=10)
 y_pred = np.rint(sigmoid(tx @ w))
 print(f"Regularized implementation accuracy: {accuracy(y, y_pred)}")
 

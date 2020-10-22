@@ -105,8 +105,10 @@ def sigmoid(x):
         apply sigmoid.
 
     """
+    epsilon = 1E-12
     a = 1 / (1 + np.exp(-x))
-    a = np.where(np.isclose(a, 0.0), 1E-12, a)
+    a = np.where(np.isclose(a, 0.0), epsilon, a)
+    a = np.where(np.isclose(a, 1.0), (1-epsilon), a)
     return a
 
 

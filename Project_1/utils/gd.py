@@ -39,6 +39,7 @@ def gradient_descent(y, tx, initial_w, max_iters, gamma, verbose = False):
         loss = mse(y, tx, w)
         # Update the weights
         w = w - gamma * g
+        w = w.ravel()
         # Store the weights and loss
         ws.append(w)
         losses.append(loss)
@@ -88,6 +89,7 @@ def gradient_descent_logistic(y, tx, initial_w, max_iters, gamma, verbose = Fals
 
         # Update the weights
         w = w - gamma * g
+        w = w.ravel()
         # Store the weights and loss
         ws.append(w)
         losses.append(loss)
@@ -98,9 +100,10 @@ def gradient_descent_logistic(y, tx, initial_w, max_iters, gamma, verbose = Fals
         
     return losses, ws       
     
-def reg_gradient_descent_logistic(y, tx, initial_w, max_iters, gamma, lambda_, reg, verbose=False):
+def reg_gradient_descent_logistic(y, tx, initial_w, max_iters, gamma, lambda_, reg, verbose=False,
+                                  early_stopping=True, tol=0.0001, patience=5):
     """
-    Gradient Descent for regularized logistic regression.
+    Regularized logistic regression with gradient descent.
 
     Parameters
     ----------
@@ -109,25 +112,33 @@ def reg_gradient_descent_logistic(y, tx, initial_w, max_iters, gamma, lambda_, r
     tx : Matrix
         Input.
     initial_w : Vector
-        Inital weight vector.
+        Inital weights.
     max_iters : Scalar
-        Max iterations.
+        Maximum iterations.
     gamma : Scalar
         Learning rate.
     lambda_ : Scalar
-        Constant.
-    reg : Scalar
-        L1 or L2 regularization.
+        Regularization.
+    reg : Integer
+        l1 or l2 regularizarion.
     verbose : Boolean, optional
-        Print each step or not. The default is False.
+        Print steps. The default is False.
+    early_stopping : Boolean, optional
+        Stop early if no improvement in loss. The default is True.
+    tol : Scalar, optional
+        Minimum the loss needs to decrease by. The default is 0.0001.
+    patience : Integer, optional
+        Change needs to be seen in this number of iterations. The default is 10.
+
     Returns
     -------
     losses : Vector
-        Loss for each iteration.
+        History of losses.
     ws : Vector
-        Weight vector for each iteration.
+        History of weights.
 
     """
+
     # Define parameters to store w and loss.
     ws = [initial_w]
     w = initial_w
@@ -140,6 +151,7 @@ def reg_gradient_descent_logistic(y, tx, initial_w, max_iters, gamma, lambda_, r
 
         # Update the weights
         w = w - gamma * g
+        w = w.ravel()
         # Store the weights and loss
         ws.append(w)
         losses.append(loss)
@@ -147,6 +159,17 @@ def reg_gradient_descent_logistic(y, tx, initial_w, max_iters, gamma, lambda_, r
         if verbose:
             print("Gradient descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
                 bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
+            
+        if (early_stopping) and (n_iter > patience):
+            # Check if loss has improved by tol in last patience iters
+            l_pat = reg_logistic_error(y, tx, ws[-patience], lambda_, reg)
+            l_1 = reg_logistic_error(y, tx, ws[-1], lambda_, reg)
+            try: # If we get invaluid value in the log.
+                if ((l_pat - l_1) < tol):
+                    print(f"Stopped after {n_iter} it.")
+                    break
+            except exception as e:
+                print(e)
+                break
         
-    return losses, ws      
-    
+    return losses, ws

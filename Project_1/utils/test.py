@@ -31,27 +31,35 @@ initial_w = np.zeros(tx.shape[1])
 max_it = 500
 gamma = 0.05
 
+
+print("---------------------- \n Linear Regression \n---------------------")
+
 # #  LR w/ GD.
 w, loss = least_squares_GD(y, tx, initial_w,
                             max_it, gamma, verbose=False)
 y_pred = tx @ w
-print(f"Our implementation r_sq: {r_squared(y, y_pred)}, loss : {mse(y, tx, w)}")
+print(f"GD --> Our implementation r_sq: {r_squared(y, y_pred)}, loss : {mse(y, tx, w)}")
 
 # Sklearn LR.
 reg = LinearRegression().fit(X, y)
 y_pred = reg.predict(X)
-print(f"Sklearn implementation r_sq: {r2_score(y_pred, y)}, sklearn loss {mse(y, tx, np.r_[reg.intercept_, reg.coef_])}")
+print(f"Sklearn implementation r_sq: {r_squared(y, y_pred)}, sklearn loss {mse(y, tx, np.r_[reg.intercept_, reg.coef_])}")
 
 
 # LR w/ SGD
 
 w, loss = least_squares_SGD(y, tx, initial_w,
                       max_it*5, gamma, verbose = False)
-print(f"LR w/ SGD, w = {w}, loss = {loss}")
+y_pred = tx @ w
+print(f"SGD --> Our implementation r_sq: {r_squared(y, y_pred)}, loss : {mse(y, tx, w)}")
 
 # LR w/ normal equations
 w, loss = least_squares(y, tx)
-print(f"LR w/ normal equations, w = {w}, loss = {loss}")
+y_pred = tx @ w
+print(f"EQ --> r_sq: {r_squared(y, y_pred)}, loss : {mse(y, tx, w)}")
+
+
+print("----------\nRidge regression\n-----------")
 
 # Ridge regression w/ Sklearn equations
 y_pred = Ridge(alpha=1.0).fit(X, y).predict(X)
@@ -61,6 +69,14 @@ print("Sklearn ridge regression r2", r_squared(y, y_pred))
 lw, loss = ridge_regression(y, tx, lambda_= 1.)
 y_pred = tx @ w
 print("Our implementation ridge r2", r_squared(y, y_pred))
+
+
+print("\n\t\t-------------------------\n")
+print("\t\t-------------------------\n")
+print("\t\t-------------------------\n")
+
+print("---------------------- \n Logistic Regression \n---------------------")
+
 
 # =============================================================================
 # Logistic Regression
@@ -81,7 +97,7 @@ w, loss = logistic_regression(y, tx, initial_w, max_it, gamma)
 # Predit in sample
 y_pred = np.rint(sigmoid(tx @ w))
 
-print(f"Our implementation accuracy: {accuracy(y, y_pred)}")
+print(f"GD --> Our implementation accuracy: {accuracy(y, y_pred)}")
 
 # Check with the sklearn implementation
 
@@ -91,23 +107,21 @@ print("Sklearn implementation accuracy: ",accuracy_score(y, clf.predict(scaled_X
 # Stochastic gradient descent logistic regression.
 w, loss = logistic_regression(y, tx, initial_w, max_it, gamma, batch_size=1)
 y_pred = np.rint(sigmoid(tx @ w))
-print(f"Our implementation accuracy Stochastic Gradient Descent: {accuracy(y, y_pred)}")
+print(f"SGD --> Our implementation accuracy: {accuracy(y, y_pred)}")
 
+
+print("---------- \nRegularized\n----------")
 
 # Logistic regression with regularization
-lambda_ = 0.05
+lambda_ = 0.02
 reg = 2 # -> L2 or L1 regularization.
 w, loss = reg_logistic_regression(y, tx, lambda_, reg, initial_w,
-                                  max_it, gamma)
+                                  max_it, gamma, verbose=True)
 y_pred = np.rint(sigmoid(tx @ w))
-print(f"Regularized implementation accuracy: {accuracy(y, y_pred)}")
+print(f"GD --> Regularized implementation accuracy: {accuracy(y, y_pred):.4f}")
 
 
-# Logistic regression with regularization and SGD
-lambda_ = 0.05
-reg = 2 # -> L2 or L1 regularization.
-w, loss = reg_logistic_regression(y, tx, lambda_, reg, initial_w,
-                                  1000, gamma, batch_size=1, patience=10)
-y_pred = np.rint(sigmoid(tx @ w))
-print(f"Regularized implementation accuracy: {accuracy(y, y_pred)}")
-
+# Sklearn
+rlr = LogisticRegression(penalty = "l2", C = 1/lambda_, max_iter = 10000).fit(scaled_X, y)
+y_pred = rlr.predict(scaled_X)
+print(f"Sklearn regularized logistic regression : {accuracy(y,y_pred):.4f}")

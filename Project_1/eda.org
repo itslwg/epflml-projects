@@ -9,7 +9,7 @@ os.chdir("utils")
 
 #+RESULTS:
 :results:
-0 - 7573792b-3d83-4698-99aa-4fdaa3c4b398
+# Out[8]:
 :end:
 
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
@@ -29,7 +29,7 @@ from costs import reg_logistic_error
 
   #+RESULTS:
   :results:
-  # Out[136]:
+  # Out[9]:
   :end:
 
   Setup notebook settings
@@ -42,7 +42,7 @@ from costs import reg_logistic_error
 
   #+RESULTS:
   :results:
-  # Out[3]:
+  # Out[10]:
   :end:
   
 
@@ -54,7 +54,7 @@ train = pd.read_csv("../data/train.csv")
 
   #+RESULTS:
   :results:
-  # Out[137]:
+  # Out[11]:
   :end:
 
   #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
@@ -63,7 +63,7 @@ X = train.replace(to_replace=-999, value=np.nan)
 
   #+RESULTS:
   :results:
-  # Out[138]:
+  # Out[12]:
   :end:
   
   Replace the missing values by np.nan, and try list-wise deletion
@@ -74,7 +74,52 @@ cc = X.dropna()
 
   #+RESULTS:
   :results:
-  # Out[139]:
+  # Out[13]:
+  :end:
+
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+cca = np.asarray(cc)
+X = cca[:, 2:]
+summary = np.concatenate([
+    np.median(X, axis=0)[np.newaxis],
+    np.mean(X, axis=0)[np.newaxis],
+    np.max(X, axis=0)[np.newaxis]
+], axis=0)
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[95]:
+  :end:
+
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+summary[:5, :5]
+  #+END_SRC
+
+  #+RESULTS:
+  :results:
+  # Out[97]:
+  #+BEGIN_EXAMPLE
+    array([[113.23, 26.964000000000002, 70.93, 94.714, 2.1464999999999996],
+    [122.81618442610974, 35.2702998649324, 78.49681541239731,
+    111.43039339930067, 2.4342322430043994],
+    [988.199, 594.2869999999999, 789.538, 1053.807, 8.503]],
+    dtype=object)
+  #+END_EXAMPLE
+  :end:
+  
+
+  #+BEGIN_SRC ipython :session :exports both :results raw drawer :async t
+np.sort(X[:, 1])
+  #+END_SRC  
+
+  #+RESULTS:
+  :results:
+  # Out[94]:
+  #+BEGIN_EXAMPLE
+    array([0.736, 6.041, 10.286, 13.55, 14.024000000000001, 27.18, 28.862,
+    51.655, 62.758, 64.045], dtype=object)
+  #+END_EXAMPLE
   :end:
 
   We can also replace by the median of each corresponding column, and insert missing indicator variables

@@ -1,96 +1,84 @@
-
-""" Will be used in the run.py script that takes the test file and generates the predictions. No pandas allowed"""
 import numpy as np
 
 def import_data(path):
-    #TODO
     """
-    Import csv file and return array of the data and vector of the column names.
-
-    Parameters
-    ----------
-    path : str
-        Directory of csv file.
-
-    Returns
-    -------
-    data : np.array
-        Array of dataset.
-    cols : np.array
-        Name of columns.
-
+    Import csv files and return array of X,y and vector of the column names.
     """
-    pass
-    #return data, cols
-    
-def clean(data, cols, col_med=None, to_drop=None):
-    """
-    When used on the training data:
-        - Turn string into numeric
-        - Replace -999 into nan
-        - Delete columns where more than 50% of rows are missing
-        - Replace nan values to median of the column
-        - Split into X and y
-    When used on the testing  data:
-        - Turn string into numeric
-        - Replace -999 into nan
-        - Delete same columns as for training set (not based on 50% missing)
-        - Replace nan values with median of the column OF THE TRAINING SET.
-        - Split into X and y.
+    train = np.loadtxt(
+        f"{path}/data/train.csv",
+        delimiter = ",",
+        skiprows=0,
+        dtype=str
+    )
 
-    Parameters
-    ----------
-    data : np.array
-        dataset.
-    cols : np.array
-        Column names.
-    col_med : np.array, optional
-        Median for each column we keep from the tr set. The default is None.
-    to_drop : np.array, optional
-        Names of columns to drop. The default is None.
+    test = np.loadtxt(
+        f"{path}/data/test.csv",
+        delimiter = ",",
+        skiprows=0,
+        dtype=str
+    )
 
-    Returns
-    -------
-    X : np.array
-        Features.
-    y : np.array
-        Target.
+    col_names = train[0,:]
 
-    """
+    # Remove column names
+    train = np.delete(train, obj=0, axis=0)
+    test = np.delete(test, obj=0, axis=0)
+
+    # Map 0 & 1 to label
+    label_idx = np.where(col_names == "Prediction")[0][0]
+    train[:,label_idx] = np.where(train[:,label_idx]=="s", 1, 0)
+
+    test[:,label_idx] = 0
+
+    # Replace -999 with nan
+    train = train.astype(np.float32)
+    train[train == -999] = np.nan
+
+    test = test.astype(np.float32)
+    test[test == -999] = np.nan
+    return train, test, col_names
+
+def prepare_features(tx_nan, degree, mean=None): 
+    # Get column means, if necessary
+    if mean is None:
+        mean = np.nanmean(tx_nan,axis=0)
     
-    # Turn string column (target) into numeric value
-    pred_idx = np.argwhere(cols=="Prediction")[0,0]
-    preds = data[:,pred_idx].copy()
-    preds = np.where(preds=="s", 1, 0)
-    data[:,pred_idx] = preds
+    # Replace NaNs
+    tx_val = np.where(np.isnan(tx_nan), mean, tx_nan)
     
-    # Replace -999 into nan
-    data[data == -999] = np.nan
+    # Polynomial features
+    tx = build_poly(tx_val, degree)
+    const_col = tx.shape[1]-1
     
-    # Change fmt so isnan() works
-    # TODO: When we import w/o pandas, we will not need to do this anymore.
-    data = data.astype("float64")
+    # Add NaN indicator columns
+    nan_cols = np.flatnonzero(np.any(np.isnan(tx_nan), axis=0))
+
+    ind_cols = np.empty((tx_nan.shape[0], nan_cols.shape[0]))
+    ind_cols = np.where(np.isnan(tx_nan[:,nan_cols]), 1, 0)
+
+    tx = np.c_[tx, ind_cols]
     
-    # Remove columns where there is more than 50% of rows missing
-    if not to_drop:
-        count_nan = np.sum(np.isnan(data), axis=0)
-        to_keep_idx = np.where(count_nan >= int(0.5*data.shape[0]), False, True)
-        data = data[:,to_keep_idx]
-    else:
-        # TODO: Remove list of columns that has been specified.
-        pass
+    # Standardize
+    tx, _, _ = standardize_numpy(tx)
+    tx[:,const_col] = 1.0
     
-    # Replace remaining nan values with the median of the column
-    if not col_med:   
-        col_med = np.nanmedian(data, axis=0)
-        
-    repl_idx = np.where(np.isnan(data))
-    data[repl_idx] = np.take(col_med, repl_idx[1])
+    return tx, mean, nan_cols
+
+def build_poly(x, degree):
+    """polynomial basis functions for each column of x, for j=1 up to j=degree, and single constant term."""
+    if (degree < 0): raise ValueError("degree must be positive")
     
-    # Split features and target   
-    id_idx = np.argwhere(cols=="Id")[0,0]
-    x_idx = np.delete(np.arange(data.shape[1]), [id_idx, pred_idx])
-    y = data[:,pred_idx]
-    X = data[:,x_idx]
+    phi = np.empty((x.shape[0], x.shape[1]*degree+1))
     
-    return X, y
+    # Constant term
+    phi[:,-1] = 1
+    
+    # Higher order terms
+    for j in range(x.shape[1]):
+        phi[:,j*degree] = x[:,j]
+        for d in range(1,degree):
+            col = j*degree+d
+            phi[:,col] = phi[:,col-1] * x[:,j]
+    
+    return phi
+

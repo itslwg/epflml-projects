@@ -3,51 +3,43 @@
 import numpy as np
 import csv
 
+def import_data(path):
+    """
+    Import csv files and return array of X,y and vector of the column names.
+    """
+    train = np.loadtxt(
+        f"{path}train.csv",
+        delimiter = ",",
+        skiprows=0,
+        dtype=str
+    )
 
-def load_data(sub_sample=True, add_outlier=False):
-    """Load data and convert it to the metrics system."""
-    path_dataset = "height_weight_genders.csv"
-    data = np.genfromtxt(
-        path_dataset, delimiter=",", skip_header=1, usecols=[1, 2])
-    height = data[:, 0]
-    weight = data[:, 1]
-    gender = np.genfromtxt(
-        path_dataset, delimiter=",", skip_header=1, usecols=[0],
-        converters={0: lambda x: 0 if b"Male" in x else 1})
-    # Convert to metric system
-    height *= 0.025
-    weight *= 0.454
+    test = np.loadtxt(
+        f"{path}test.csv",
+        delimiter = ",",
+        skiprows=0,
+        dtype=str
+    )
 
-    # sub-sample
-    if sub_sample:
-        height = height[::50]
-        weight = weight[::50]
+    col_names = train[0,:]
 
-    if add_outlier:
-        # outlier experiment
-        height = np.concatenate([height, [1.1, 1.2]])
-        weight = np.concatenate([weight, [51.5/0.454, 55.3/0.454]])
+    # Remove column names
+    train = np.delete(train, obj=0, axis=0)
+    test = np.delete(test, obj=0, axis=0)
 
-    return height, weight, gender
+    # Map 0 & 1 to label
+    label_idx = np.where(col_names == "Prediction")[0][0]
+    train[:,label_idx] = np.where(train[:,label_idx]=="s", 1, 0)
 
+    test[:,label_idx] = 0
 
-def standardize(x):
-    """Standardize the original data set."""
-    mean_x = np.mean(x)
-    x = x - mean_x
-    std_x = np.std(x)
-    x = x / std_x
-    return x, mean_x, std_x
+    # Replace -999 with nan
+    train = train.astype(np.float32)
+    train[train == -999] = np.nan
 
-
-def build_model_data(height, weight):
-    """Form (y,tX) to get regression data in matrix form."""
-    y = weight
-    x = height
-    num_samples = len(y)
-    tx = np.c_[np.ones(num_samples), x]
-    return y, tx
-
+    test = test.astype(np.float32)
+    test[test == -999] = np.nan
+    return train, test, col_names
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
     """
@@ -74,7 +66,6 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
         if start_index != end_index:
             yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
 
-
 def create_csv_submission(ids, y_pred, name):
     """
     Creates an output file in csv format for submission to AIcrowd
@@ -89,6 +80,49 @@ def create_csv_submission(ids, y_pred, name):
         for r1, r2 in zip(ids, y_pred):
             writer.writerow({'Id':int(r1),'Prediction':int(r2)})
 
+def build_poly(x, degree):
+    """polynomial basis functions for each column of x, for j=1 up to j=degree, and single constant term."""
+    if (degree < 0): raise ValueError("degree must be positive")
+    
+    phi = np.empty((x.shape[0], x.shape[1]*degree+1))
+    
+    # Constant term
+    phi[:,-1] = 1
+    
+    # Higher order terms
+    for j in range(x.shape[1]):
+        phi[:,j*degree] = x[:,j]
+        for d in range(1,degree):
+            col = j*degree+d
+            phi[:,col] = phi[:,col-1] * x[:,j]
+    
+    return phi
+
+def prepare_features(tx_nan, degree, mean=None): 
+    # Get column means, if necessary
+    if mean is None:
+        mean = np.nanmean(tx_nan,axis=0)
+    
+    # Replace NaNs
+    tx_val = np.where(np.isnan(tx_nan), mean, tx_nan)
+    
+    # Polynomial features
+    tx = build_poly(tx_val, degree)
+    const_col = tx.shape[1]-1
+    
+    # Add NaN indicator columns
+    nan_cols = np.flatnonzero(np.any(np.isnan(tx_nan), axis=0))
+
+    ind_cols = np.empty((tx_nan.shape[0], nan_cols.shape[0]))
+    ind_cols = np.where(np.isnan(tx_nan[:,nan_cols]), 1, 0)
+
+    tx = np.c_[tx, ind_cols]
+    
+    # Standardize
+    tx, _, _ = standardize_numpy(tx)
+    tx[:,const_col] = 1.0
+    
+    return tx, mean, nan_cols
 
 def sigmoid(x):
     """
@@ -111,20 +145,13 @@ def sigmoid(x):
     a = np.where(np.isclose(a, 1.0), (1-epsilon), a)
     return a
 
+def standardize_numpy(x):
+    """Standardize the original data set. Works on numpy arrays."""
+    mean_x = x.mean(axis=0, keepdims=True)
+    x = x - mean_x
+    std_x = x.std(axis=0, keepdims=True)
+    x = x / std_x
+    return x, mean_x, std_x
 
-def normalize(X):
-    """
-    Z score normalization
-
-    Parameters
-    ----------
-    x : Matrix
-        Input features.
-
-    Returns
-    -------
-    Matrix for input features that have been normalized.
-
-    """
-
-    return (X - np.mean(X, axis=0)) / np.std(X, axis=0)
+def predict_reg_log_regression(tx, w):
+    return np.rint(sigmoid(tx @ w))

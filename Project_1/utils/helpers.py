@@ -145,13 +145,13 @@ def sigmoid(x):
     a = np.where(np.isclose(a, 1.0), (1-epsilon), a)
     return a
 
-def standardize_numpy(x):
+def standardize_numpy(x, mean=None, std=None):
     """Standardize the original data set. Works on numpy arrays."""
-    mean_x = x.mean(axis=0, keepdims=True)
-    x = x - mean_x
-    std_x = x.std(axis=0, keepdims=True)
-    x = x / std_x
-    return x, mean_x, std_x
+    if mean is None: mean = x.mean(axis=0, keepdims=True)
+    x = x - mean
+    if std is None: std = x.std(axis=0, keepdims=True)
+    x = x / std
+    return x, mean, std
 
 def predict_reg_log_regression(tx, w):
     return np.rint(sigmoid(tx @ w))

@@ -154,3 +154,7 @@ Project_1/data/raw/sample-submission.csv
 .DS_Store
 .DS_Store
 *.zip
+Project_1/code/data/submission.csv
+Project_1/code/data/test.csv
+Project_1/code/data/train.csv
+Project_1/scripts/.DS_Store

@@ -192,6 +192,7 @@ def sigmoid(x):
 # =============================================================================
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
+    # Please note this code was provided to us during the lab sessions.
     """
     Generate a minibatch iterator for a dataset.
     Takes as input two iterables (here the output desired values 'y' and the input data 'tx')
@@ -255,6 +256,7 @@ def import_data(path="data/"):
     return train, test, col_names
 
 def create_csv_submission(ids, y_pred, name):
+    # Please note this code was provided to us during the lab sessions.
     """
     Creates an output file in csv format for submission to AIcrowd
     Arguments: ids (event ids associated with each prediction)

@@ -22,8 +22,8 @@ def cross_validation(y_tr, tx_tr, y_te, tx_te, comb, verbose=2):
         patience=5
     )
     # calculate the loss for train and test data
-    loss_tr = reg_logistic_error(y_tr, tx_tr, w, comb["lambda_"], comb["reg"])
-    loss_te = reg_logistic_error(y_te, tx_te, w, comb["lambda_"], comb["reg"])
+    loss_tr = logistic_error(y_tr, tx_tr, w)
+    loss_te = logistic_error(y_te, tx_te, w)
     # compute performance metrics
     p = logistic_prediction(tx_te, w)
     f1 = f1_score(y_te, p)

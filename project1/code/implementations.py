@@ -50,7 +50,7 @@ def least_squares_SGD(y, tx, initial_w,
                 print("Stochastic gradient descent({bi}/{ti}): loss={l}".format(
                     bi=n_iter, ti=max_iters - 1, l=loss))
 
-    return ws[-1], losses[-1]
+    return ws[-1], mse(y, tx, ws[-1])
 
 
 def least_squares(y, tx):
